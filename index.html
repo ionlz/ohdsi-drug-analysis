@@ -288,6 +288,37 @@
     .reading-step:nth-child(4), .reading-step:nth-child(5) { border-top-color: var(--orange); }
     .reading-step b { display: block; color: var(--navy); }
     .reading-step span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .chapter-bridge {
+      display: grid;
+      grid-template-columns: 145px 1fr;
+      gap: 22px;
+      align-items: start;
+      margin: -8px 0 38px;
+      padding: 22px 24px;
+      background: var(--pale-blue);
+      border-left: 5px solid var(--blue);
+      border-radius: 0 14px 14px 0;
+    }
+    .bridge-label { color: var(--navy-2); font-size: 12px; font-weight: 800; letter-spacing: .1em; }
+    .chapter-bridge p { margin: 0; color: #355764; }
+    .method-ladder { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 32px 0 40px; }
+    .method-rung { position: relative; padding: 22px 20px; color: var(--white); background: var(--navy-2); }
+    .method-rung:first-child { border-radius: 14px 0 0 14px; }
+    .method-rung:last-child { border-radius: 0 14px 14px 0; }
+    .method-rung:nth-child(2) { background: #176b82; }
+    .method-rung:nth-child(3) { background: var(--orange); }
+    .method-rung:nth-child(4) { background: var(--green); }
+    .method-rung::after { content: "›"; position: absolute; right: -8px; top: 50%; z-index: 2; color: var(--white); font-size: 25px; transform: translateY(-52%); }
+    .method-rung:last-child::after { display: none; }
+    .method-rung b { display: block; }
+    .method-rung span { display: block; margin-top: 5px; font-size: 12px; opacity: .86; }
+    .method-contract { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 30px 0; }
+    .contract-item { padding: 20px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
+    .contract-item b { display: block; margin-bottom: 7px; color: var(--navy); }
+    .contract-item p { margin: 0; color: var(--muted); font-size: 13px; }
+    .next-step { margin-top: 34px; padding: 20px 24px; color: var(--white); background: linear-gradient(105deg, var(--navy), var(--navy-2)); border-radius: 14px; }
+    .next-step strong { color: var(--amber); }
+    .next-step a { color: var(--white); font-weight: 800; text-underline-offset: 3px; }
 
     .evidence-chain { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 44px; }
     .chain-step { position: relative; min-height: 126px; padding: 20px 16px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
@@ -678,6 +709,9 @@
       .hero-grid, .question-selector, .foundation-grid, .method-layout { grid-template-columns: 1fr; }
       .part-divider .container { grid-template-columns: 1fr; gap: 4px; }
       .reading-path { grid-template-columns: repeat(2, 1fr); }
+      .method-ladder, .method-contract { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .method-rung, .method-rung:first-child, .method-rung:last-child { border-radius: 12px; }
+      .method-rung::after { display: none; }
       .evidence-chain { grid-template-columns: repeat(3, 1fr); }
       .concept-grid, .etl-grid, .fact-grid, .ecosystem-grid { grid-template-columns: repeat(2, 1fr); }
       .figure-grid { grid-template-columns: 1fr; }
@@ -694,6 +728,8 @@
     @media (max-width: 760px) {
       .container { width: min(100% - 36px, 1120px); }
       .reading-path { grid-template-columns: 1fr; }
+      .chapter-bridge { grid-template-columns: 1fr; gap: 5px; }
+      .method-ladder, .method-contract { grid-template-columns: 1fr; }
       .section { padding: 68px 0; }
       .section-head { grid-template-columns: 1fr; gap: 12px; }
       .section-index { font-size: 24px; }
@@ -808,6 +844,7 @@
           </div>
           <div class="audit-note"><strong>数字口径说明：</strong>“544 个数据源 / 54 个国家 / 9.74 亿条患者记录”来自 OHDSI 2024 年公开旅程报告。不同来源可能覆盖同一人群，且网络成员、可用时间范围和研究审批会变化，因此本页不把它解释为去重后的独立患者人数，也不把它当作当前可调用数据量。</div>
           <div class="principle-strip" style="margin-top:42px"><div class="principle"><strong>OHDSI</strong><p>开放科学社区与协作网络。</p></div><div class="principle"><strong>OMOP CDM</strong><p>由 OHDSI 社区维护的观测性健康数据共同模型。</p></div><div class="principle"><strong>HADES / ATLAS</strong><p>前者是分析 R 包体系，后者是与 WebAPI 配套的研究设计和分析平台；两者不是 CDM 本身。</p></div></div>
+          <div class="next-step"><strong>先别急着进入软件。</strong> 下一章先区分药物利用、比较效果、安全性和预测各自回答什么问题，再据此选择全文阅读路线。进入 <a href="#questions">第 01 章：确定研究问题</a>。</div>
         </div>
       </section>
 
@@ -837,6 +874,7 @@
             <div class="reading-step"><b>第四部分｜落地执行</b><span>按完整案例完成平台配置、运行、诊断和跨库复现。</span></div>
             <div class="reading-step"><b>第五部分｜查阅与核实</b><span>用术语手册补概念，用边界清单避免过度解释。</span></div>
           </div>
+          <div class="next-step"><strong>问题类型确定后，先建立共同的数据语言。</strong> 无论最终采用哪种分析，都要经过 CDM 结构、标准词汇与 ETL 三层准备。进入 <a href="#foundation">第 02 章：OMOP CDM</a>。</div>
         </div>
       </section>
 
@@ -858,6 +896,7 @@
             <figcaption><span class="figure-label">OFFICIAL FIGURE</span><strong>OMOP CDM 数据模型总览</strong>读图顺序：先看左侧以 PERSON 为中心的临床事件表，再看中间的系统数据、派生表和 Results Schema，最后看右侧为所有领域提供统一语义的标准词汇表。药物分析的事实记录主要进入 <code>DRUG_EXPOSURE</code>，连续暴露可派生为 <code>DRUG_ERA</code>。<a href="https://ohdsi.github.io/TheBookOfOhdsi/CommonDataModel.html" target="_blank" rel="noreferrer">来源：The Book of OHDSI，Common Data Model ↗</a></figcaption>
           </figure>
           <div class="audit-note"><strong>版本核实：</strong>截至 2026-09-06，官方 v5.5 规范明确称其为最新版本。v5.5 相比 v5.4 新增 7 个非必填字段，并增加 PACK_CONTENT、CONCEPT_METADATA、CONCEPT_RELATIONSHIP_METADATA 三张词汇相关表。官方兼容矩阵显示所列工具支持 v5.4 既有功能，但除 CDM R package 外，对 v5.5 新特性的完整、已测试发布支持仍标为待完成。官网“CDM 变更申请流程”页仍残留“当前 v5.4”的旧文案，本页以最新版本规范为准。</div>
+          <div class="next-step"><strong>统一表结构只是第一步。</strong> 两个数据库都把记录放进 DRUG_EXPOSURE，并不代表它们表达的是同一种药；下一章解释标准概念、映射和层级如何统一临床语义。进入 <a href="#vocabulary">第 03 章：标准词汇</a>。</div>
         </div>
       </section>
 
@@ -876,6 +915,7 @@
             <figcaption><span class="figure-label">OFFICIAL FIGURE</span><strong>源概念、标准概念与分类概念的关系</strong>图中用疾病词汇举例，但药物研究遵循同一语义框架：本地药品代码映射到 RxNorm/RxNorm Extension 标准概念，ATC 等分类概念用于分组和导航。分类概念不应直接替代事实表中的标准药物概念。<a href="https://ohdsi.github.io/TheBookOfOhdsi/StandardizedVocabularies.html" target="_blank" rel="noreferrer">来源：The Book of OHDSI，Standardized Vocabularies ↗</a></figcaption>
           </figure>
           <p class="matrix-note"><strong>药物分析要点：</strong>概念集应说明所选层级、是否包含后代、排除项和词汇版本；映射到更宽泛概念时可能损失信息，应纳入数据质量评估。</p>
+          <div class="next-step"><strong>结构与语义明确后，需要把源数据真正转换出来。</strong> 下一章将 CDM 表和词汇映射放回 ETL 全流程，并说明如何验证转换后的数据可用于研究。进入 <a href="#etl">第 04 章：ETL 与数据质量</a>。</div>
         </div>
       </section>
 
@@ -889,6 +929,7 @@
             <article class="etl-step"><h3>质量控制</h3><p>检查完整性、一致性、合理性与源到目标的数量变化，并记录可重现的测试与版本。</p></article>
           </div>
           <div class="principle-strip" style="margin-top:42px"><div class="principle"><strong>可追溯</strong><p>保留源值、源概念和转换文档，能够解释每一条记录的来路。</p></div><div class="principle"><strong>可重复</strong><p>数据刷新时重新执行同一流程，而非手工修补结果。</p></div><div class="principle"><strong>可维护</strong><p>源系统、CDM 或词汇版本变化时，更新代码、文档和质量测试。</p></div></div>
+          <div class="next-step"><strong>数据准备之后先认识工具。</strong> 当 CDM 结构、词汇映射和质量检查可用后，下一步是理解 Athena、ATLAS/WebAPI、HADES 与 Strategus 各自承担什么任务。进入 <a href="#ecosystem">第 05 章：工具与平台分工</a>。</div>
         </div>
       </section>
 
@@ -909,6 +950,7 @@
             <figcaption><span class="figure-label">OFFICIAL SCREENSHOT</span><strong>ATLAS Cohort Definition：把队列逻辑配置成可执行规则</strong>界面从上到下对应“进入事件—观察期—初始事件选择—纳入规则”。实际研究还需继续设置退出策略、生成队列并查看 Reporting/Diagnostics。截图来自教材版本，按钮样式可能随 ATLAS 版本变化，但逻辑结构保持一致。<a href="https://ohdsi.github.io/TheBookOfOhdsi/Cohorts.html" target="_blank" rel="noreferrer">来源：The Book of OHDSI，Defining Cohorts ↗</a></figcaption>
           </figure>
           <p class="matrix-note"><strong>验证原则：</strong>宽松规则提高敏感度，严格规则提高阳性预测值。应依据研究问题取舍，并用 CohortDiagnostics、病历复核或外部金标准评估表型。</p>
+          <div class="next-step"><strong>队列生成后先不要直接建模型。</strong> 下一步应检查人数、事件、观察时间和基线特征，确认队列逻辑正确且研究具有可行性。进入 <a href="#characterization">第 07 章：表征与可行性</a>。</div>
         </div>
       </section>
 
@@ -921,6 +963,7 @@
             <article class="character-card"><h3>发生率</h3><p>在目标队列的风险时间内识别新结局，同时报告病例数、发生比例、人时和发生率，并可分层。</p><div class="metric-line"><span>CohortIncidence</span><span>Incidence Rate</span><span>Person-time</span></div></article>
           </div>
           <div class="principle-strip" style="margin-top:42px"><div class="principle"><strong>人群级输出</strong><p>计数、比例、均值、中位数和标准差，用于描述与比较。</p></div><div class="principle"><strong>个体级特征</strong><p>FeatureExtraction 也可生成患者级协变量，供估计和预测模型使用。</p></div><div class="principle"><strong>分析边界</strong><p>表征发现差异；因果结论还需要对照设计、混杂控制和诊断。</p></div></div>
+          <div class="next-step"><strong>可行性通过后才能选方法。</strong> 若只需描述就进入药物利用；若要比较 A 与 B 就进入效果估计；若关注急性不良事件或个体风险，则选择相应安全性或预测设计。进入 <a href="#matrix">第 08 章：方法选择矩阵</a>。</div>
         </div>
       </section>
 
@@ -1019,12 +1062,14 @@
               <article class="term"><h4>DQD / CohortDiagnostics <small>数据与队列诊断</small></h4><p>DataQualityDashboard 检查 CDM 数据质量；CohortDiagnostics 检查表型的数量、损耗、代码构成、重叠和跨库差异。</p></article>
             </div>
           </details>
+          <div class="next-step"><strong>术语解决“它是什么意思”，核实清单解决“可以下什么结论”。</strong> 最后一章集中标注版本事实、工具边界和正式研究仍需补齐的材料。进入 <a href="#verification">第 19 章：内容核实与边界</a>。</div>
         </div>
       </section>
 
       <section class="section alt" id="worked-study" data-nav="worked-study">
         <div class="container">
           <div class="section-head"><div class="section-index">15</div><div><h2>完整实操：在 OHDSI 中完成一次药品比较研究</h2><p class="section-intro">以官方教材中的问题为贯穿示例：比较高血压一线单药治疗中，ACEI 新使用者与噻嗪类利尿剂新使用者发生血管性水肿的风险。下面把前述概念、平台操作、责任角色、输出和质量门逐阶段对应起来。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">承接七步总路线</span><p>上一章给出的是项目管理视角的七个阶段；本章把它展开为可操作的研究实例。每一步都同时回答四件事：要定义什么、在平台哪里做、由谁复核、满足什么条件才能进入下一步。</p></div>
 
           <div class="study-brief">
             <div><h3>研究问题</h3><p>在既往连续可观察至少 365 天、具有高血压诊断、此前未使用相关降压药的患者中，启动 ACEI 与启动噻嗪类利尿剂相比，治疗期间血管性水肿风险是否不同？</p></div>
@@ -1056,12 +1101,14 @@
 
             <article class="stage-card"><div class="stage-no"></div><div><h3>敏感性分析、跨库复现与报告</h3><p>改变暴露间隔、风险窗、洗脱期、PS 策略和结局定义；在多个 CDM 数据库执行相同规范并解释异质性。</p></div><div class="op-path"><b>平台操作</b>在 Estimation 中增加多个 Analysis Settings，或在 Strategus 中加入多个分析模块；使用 EvidenceSynthesis 汇总数据库级效应。导出研究规范、诊断和结果。</div><div class="owner"><b>主要责任角色</b>研究团队共同解释；项目负责人和数据伙伴审核发布内容。</div><div class="gate"><strong>最终交付：</strong>研究方案、概念集、队列定义、代码与版本、数据质量报告、诊断、主分析、敏感性分析及跨库结果完整配套。</div></article>
           </div>
+          <div class="next-step"><strong>运行完成不等于证据成立。</strong> 案例已经产生人群、诊断和效应估计；下一章把散落在各步骤中的质量门汇总成一条统一审查链，帮助决定结果是否可以解释。进入 <a href="#quality">第 16 章：诊断与证据质量</a>。</div>
         </div>
       </section>
 
       <section class="section" id="ps-methods" data-nav="ps-methods">
         <div class="container">
           <div class="section-head"><div class="section-index">11</div><div><h2>比较效果进阶：在 ATLAS 中使用 PSM、IPTW</h2><p class="section-intro">PSM、PS 分层和 IPTW 都先估计治疗倾向，再用不同方式构造可比人群。它们是混杂调整策略，不是结局预测模型，也不能挽救缺乏共同支持的 Target 与 Comparator。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">承接比较效果设计</span><p>上一章已经确定了 Target、Comparator、Outcome 与 TAR。本章只解决其中一个问题：如何调整治疗前已测量差异。先锁定比较问题，再复制多个 Analysis Settings 分别运行 PSM、IPTW 或分层；不要为每种 PS 方法重新定义一套队列。</p></div>
 
           <div class="principle-strip">
             <div class="principle"><strong>倾向评分 PS</strong><p>患者根据治疗前信息接受 Target 而非 Comparator 的估计概率。</p></div>
@@ -1152,54 +1199,97 @@
           </div>
 
           <p class="matrix-note"><strong>最重要的判断：</strong>如果调整后仍缺乏协变量平衡或共同支持，应重新设计 Target / Comparator，而不是继续修改模型直到出现显著结果。ATLAS 菜单名称会随版本略有变化，但 Comparisons → Analysis Settings → Evaluation Settings 的逻辑保持一致。</p>
+          <div class="next-step"><strong>接下来不是“更高级的 PS 方法”。</strong> 研究问题若仍是 A 对 B，可直接进入实施总路线；若关注的是短期不良事件且主动对照难找，可以考虑自我对照设计。进入 <a href="#safety">第 12 章：药物安全性</a>，理解何时沿用比较队列、何时切换设计。</div>
         </div>
       </section>
 
       <section class="section orange-tint" id="utilization" data-nav="utilization">
         <div class="container">
-          <div class="section-head"><div class="section-index">09</div><div><h2>药物利用：先描述真实世界如何用药</h2><p class="section-intro">这是最适合入门的分析类型：回答谁在用、何时开始、持续多久以及如何换药。它描述治疗行为与事件分布，不直接估计药物因果效应。</p></div></div>
+          <div class="section-head"><div class="section-index">09</div><div><h2>药物利用：先描述真实世界如何用药</h2><p class="section-intro">这是进入药物分析的第一层：把前面定义好的药物概念集和队列转成可解释的使用规模、持续时间与治疗路径。它回答“发生了什么”，同时为后续选择主动对照和风险窗提供依据。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">从方法矩阵进入</span><p>第 08 章确定了四类问题。若当前问题不涉及反事实，只想知道药物在真实世界中被谁使用、如何演变，就从药物利用开始；此时不需要为了“高级”而强行加入 PSM。</p></div>
+          <div class="method-contract">
+            <article class="contract-item"><b>输入</b><p>药物概念集、DRUG_EXPOSURE/DRUG_ERA、目标人群队列、观察期和索引日。</p></article>
+            <article class="contract-item"><b>关键定义</b><p>新使用者或现用者、允许间隔、停药、换药、加药、再启动以及分析时间窗。</p></article>
+            <article class="contract-item"><b>主要输出</b><p>使用人数/比例、起始率、持续时间、人时发生率和治疗序列。</p></article>
+            <article class="contract-item"><b>不能回答</b><p>看到某组结局更多，不能据此断言药物导致了差异。</p></article>
+          </div>
+          <h3 style="margin-bottom:18px">从药物记录重建治疗历程</h3>
           <div class="pathway" aria-label="药物治疗路径"><div class="path-node"><strong>首次用药</strong><span>新使用者数量<br>起始时间分布</span></div><div class="path-node"><strong>持续与停药</strong><span>暴露时长<br>持药与中断</span></div><div class="path-node"><strong>换药与加药</strong><span>治疗序列<br>联合方案</span></div><div class="path-node"><strong>再启动</strong><span>间隔后重启<br>多疗程模式</span></div><div class="path-node"><strong>结局描述</strong><span>发生率<br>资源使用</span></div></div>
+          <h3 style="margin:38px 0 18px">在平台中分别做什么</h3>
           <div class="tool-grid"><div class="tool-item"><h3>Characterization</h3><p>描述和比较用药队列的人口学特征、疾病史、既往用药和医疗利用。</p></div><div class="tool-item"><h3>CohortIncidence</h3><p>计算事件发生率与发生比例，并按年龄、性别或时间进行分层。</p></div><div class="tool-item"><h3>TreatmentPatterns</h3><p>分析治疗序列、治疗组合和路径转移。</p></div><div class="tool-item"><h3>ATLAS</h3><p>通过 Cohort Pathways、Characterizations 和 Incidence Rates 进行交互探索。</p></div></div>
+          <div class="op-path" style="margin-top:24px"><b>推荐操作顺序</b><strong>生成用药队列 → Characterizations 看人群 → Cohort Pathways 看换药/加药 → Incidence Rates 看结局基线频率</strong>。若两种药用于相同适应证、治疗阶段接近且样本/事件充足，才适合进入下一章做比较效果。</div>
+          <div class="next-step"><strong>下一步为什么是比较效果？</strong> 药物利用可能发现 A 与 B 都用于同一临床场景，但两组结局发生率不同。要判断差异是否与治疗有关，需要建立反事实和控制混杂。进入 <a href="#effect">第 10 章：比较效果</a>。</div>
         </div>
       </section>
 
       <section class="section alt" id="effect" data-nav="effect">
         <div class="container">
-          <div class="section-head"><div class="section-index">10</div><div><h2>比较效果：从可比治疗起始者估计相对效应</h2><p class="section-intro">典型设计是新使用者、主动对照队列：先通过设计让两组尽量可比，再用 CohortMethod 的倾向评分或结局模型调整已测量混杂。</p></div></div>
+          <div class="section-head"><div class="section-index">10</div><div><h2>比较效果：从“观察到差异”走向相对效应</h2><p class="section-intro">药物利用只能告诉我们 A 组和 B 组发生了什么。比较效果进一步定义“同类患者若改用另一种治疗会怎样”，典型起点是新使用者、主动对照队列设计。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">承接药物利用</span><p>上一章得到的治疗路径可以帮助选择真正处于同一临床决策点的 Comparator，并发现换药、联合治疗和依从性问题。现在要保持两组索引日、适应证、治疗阶段和风险窗对称，把描述性比较升级为因果问题。</p></div>
+          <div class="method-contract">
+            <article class="contract-item"><b>输入</b><p>Target、Comparator、Outcome 三类独立队列，以及统一的 t0、基线窗和 TAR。</p></article>
+            <article class="contract-item"><b>设计核心</b><p>新使用者减少既往治疗选择偏倚；主动对照减少指征与就医机会差异。</p></article>
+            <article class="contract-item"><b>主要输出</b><p>HR、IRR、RR 或风险差，同时配套事件数、随访与诊断。</p></article>
+            <article class="contract-item"><b>识别边界</b><p>只能在一致性、可交换性、positivity 和正确时间定义等假设下解释。</p></article>
+          </div>
+          <h3 style="margin-bottom:18px">先构造可比的治疗起始者</h3>
           <div class="comparison-lanes">
             <div class="lane-label">目标药 A<br>新使用者</div><div class="lane"><span>共同适应证</span><span>基线协变量</span><span>风险窗口</span><span>结局</span></div>
             <div class="lane-label comparator">对照药 B<br>新使用者</div><div class="lane"><span>相同治疗阶段</span><span>倾向评分调整</span><span>相同时间零点</span><span>结局</span></div>
           </div>
           <div class="decision-grid"><div class="decision"><h3>主动对照</h3><p>优先选择共享适应证与治疗阶段的比较药，减少指征混杂。</p></div><div class="decision"><h3>时间零点</h3><p>两组使用一致的索引规则，避免不朽时间偏倚和入组错位。</p></div><div class="decision"><h3>人群重叠</h3><p>检查倾向评分分布与加权后的协变量平衡，避免外推。</p></div><div class="decision"><h3>经验校准</h3><p>使用负对照估计系统误差，并校准 P 值和置信区间。</p></div></div>
-          <details><summary>常见输出</summary><p>效应量通常包括风险比、发生率比或风险差，同时报告事件数、随访时间、倾向评分诊断、协变量平衡和负对照分布。</p></details>
+          <div class="op-path" style="margin-top:24px"><b>ATLAS 入口</b><strong>Estimation → Comparisons</strong> 选择 Target、Comparator 和 Outcome；在 <strong>Analysis Settings</strong> 配置 Study Population、TAR、协变量、PS 调整和 Outcome Model；在 Evaluation Settings 配置负对照与校准。</div>
+          <details><summary>常见输出及其解释顺序</summary><p>先看 attrition、PS/Preference Score 重叠和协变量平衡，再看事件数、随访与功效，然后解释 HR、IRR、RR 或风险差，最后结合负对照和经验校准判断系统误差。效应值不能脱离诊断单独报告。</p></details>
+          <div class="next-step"><strong>下一步为什么单独讲 PSM/IPTW？</strong> 即使主动对照设计合理，两组基线仍可能不同。下一章解释如何在同一 Estimation 研究中用匹配、分层或加权进一步构造可比人群。进入 <a href="#ps-methods">第 11 章：PSM / IPTW</a>。</div>
         </div>
       </section>
 
       <section class="section" id="safety" data-nav="safety">
         <div class="container">
-          <div class="section-head"><div class="section-index">12</div><div><h2>药物安全性：按风险机制选择设计</h2><p class="section-intro">安全性研究既可使用主动对照队列，也可使用自我对照设计。对短暂暴露与急性结局，自我对照方法常有优势；它能控制不随时间变化的个体差异，但仍需处理年龄、季节和疾病进程等时间变化混杂。</p></div></div>
+          <div class="section-head"><div class="section-index">12</div><div><h2>药物安全性：问题变了，设计不一定要变</h2><p class="section-intro">“安全性”描述研究目的，而不是一种固定统计方法。若存在合理主动对照，可以沿用上一章的比较队列与 PS 调整；只有在暴露短暂、结局急性且固定个体差异是主要混杂来源时，才考虑自我对照设计。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">承接 PSM/IPTW</span><p>PSM/IPTW 同样能用于药物安全性比较，例如比较两种降压药的血管性水肿风险。本章补充的是另一种构造反事实的方法：不再寻找另一个患者，而是让同一患者的风险期与对照期比较。</p></div>
+          <div class="method-contract">
+            <article class="contract-item"><b>主动对照队列</b><p>适合两种替代治疗的相对安全性；继续使用 Target、Comparator、Outcome、TAR 和 PS 诊断。</p></article>
+            <article class="contract-item"><b>自我对照设计</b><p>适合短暂暴露与急性事件，天然控制性别、遗传和慢性病史等固定特征。</p></article>
+            <article class="contract-item"><b>信号检测</b><p>批量扫描药物—结局组合以发现异常关联，目的是生成假设。</p></article>
+            <article class="contract-item"><b>信号评价</b><p>针对具体假设锁定结局表型、风险窗、对照策略和敏感性分析。</p></article>
+          </div>
+          <h3 style="margin-bottom:18px">当选择自我对照时，两种常见设计</h3>
           <div class="safety-grid">
             <article class="safety-panel"><h3>Self-Controlled Case Series</h3><p>只纳入发生结局的病例，比较暴露相关风险期与其他观察期的事件发生率。</p><div class="mini-time"><span>基线观察</span><span>暴露</span><span>风险期与结局</span></div><div class="caution"><strong>需要处理：</strong>年龄、季节性、时间趋势，以及结局是否改变后续暴露或观察。</div></article>
             <article class="safety-panel"><h3>Self-Controlled Cohort</h3><p>比较暴露前和暴露后的结局发生。暴露前的时间区间作为个体自身的对照。</p><div class="mini-time"><span>暴露前对照期</span><span>暴露</span><span>暴露后风险期</span></div><div class="caution"><strong>需要处理：</strong>疾病自然进程、治疗指征随时间变化，以及暴露日期或结局日期误差。</div></article>
           </div>
-          <p class="matrix-note"><strong>选择提示：</strong>若存在合理的替代治疗，优先考虑新使用者主动对照队列；若结局急性、暴露时点清楚且个体固定特征是主要混杂来源，可考虑 SCCS。信号检测用于发现异常关联，信号评价才用于检验具体假设。</p>
+          <div class="op-path" style="margin-top:24px"><b>工具入口</b>主动对照安全性研究使用 <strong>ATLAS Estimation / CohortMethod</strong>；SCCS 通常通过 <strong>SelfControlledCaseSeries</strong> 研究包执行。无论选择哪条路径，都先用 CohortDiagnostics 检查暴露和结局的时间语义。</div>
+          <p class="matrix-note"><strong>选择提示：</strong>若存在合理的替代治疗，优先考虑新使用者主动对照队列；若结局急性、暴露时点清楚且个体固定特征是主要混杂来源，可考虑 SCCS。结局会影响后续暴露、死亡或观察终止时，必须使用相应扩展或敏感性分析。</p>
+          <div class="next-step"><strong>下一章为什么转向预测？</strong> 到这里回答的仍是群体层面的关联或效应。若临床任务变成“在已经决定治疗后，谁最可能发生不良事件”，估计目标就从平均效应切换为个体风险。进入 <a href="#prediction">第 13 章：个体风险预测</a>。</div>
         </div>
       </section>
 
       <section class="section alt" id="prediction" data-nav="prediction">
         <div class="container">
           <div class="section-head"><div class="section-index">13</div><div><h2>个体风险预测：治疗后谁更可能发生结局</h2><p class="section-intro">PatientLevelPrediction 统一定义目标队列 T、结局 O、时间零点 t0 和风险预测窗口 TAR。它预测患者未来风险，不估计把治疗 A 换成 B 会造成什么效果。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">从效应转向预测</span><p>比较效果和安全性研究关心群体平均效应，通常需要 Comparator；个体预测关心某位患者未来发生 Outcome 的概率，通常不需要治疗对照组。两者可以复用队列、词汇和特征提取，但训练目标、评价指标和临床用途完全不同。</p></div>
+          <div class="method-contract">
+            <article class="contract-item"><b>预测时点</b><p>Target 队列进入日 t0；所有特征必须在这一时点已经可获得。</p></article>
+            <article class="contract-item"><b>预测对象</b><p>Outcome 是否在未来 TAR 内发生，而不是治疗 A 相对 B 的因果效果。</p></article>
+            <article class="contract-item"><b>主要输出</b><p>个体风险概率，以及 AUROC/AUPRC、校准、阈值表现和决策曲线。</p></article>
+            <article class="contract-item"><b>应用条件</b><p>模型结果必须连接具体行动，并经过时间、地域或数据库外部验证。</p></article>
+          </div>
           <div class="prediction-figure" aria-label="患者级预测时间框架"><div class="prediction-block">历史窗口<small>诊断、药物、检查和操作等特征</small></div><div class="prediction-block">t0<small>目标队列 T</small></div><div class="prediction-block">TAR 风险窗口<small>预测结局 O 是否发生</small></div></div>
           <div class="prediction-steps"><div class="prediction-step"><h3>候选算法</h3><p>正则化回归、树模型、深度学习或用户自定义算法。</p></div><div class="prediction-step"><h3>内部验证</h3><p>评估区分度、校准度、阈值表现与过拟合。</p></div><div class="prediction-step"><h3>外部验证</h3><p>在其他数据库、机构或时间段评估迁移能力。</p></div><div class="prediction-step"><h3>临床应用</h3><p>预先定义预测时点、行动阈值、干预方式和净获益。</p></div></div>
+          <div class="op-path" style="margin-top:24px"><b>ATLAS 入口</b><strong>Prediction → New Prediction</strong>，选择 Target 与 Outcome，配置 population settings、TAR、covariates、算法和 validation。导出 PatientLevelPrediction 研究包后，在本地运行并查看模型诊断。</div>
           <p class="matrix-note"><strong>边界：</strong>预测模型回答个体风险。它不自动回答“某种药物是否导致结局”，因果效应需要单独的研究设计。</p>
+          <div class="next-step"><strong>方法选择到此结束。</strong> 下一步不是继续增加模型，而是把问题、数据、队列、方法和诊断组织成可执行研究。进入 <a href="#implementation">第 14 章：实施总路线</a>，再用第 15 章完整案例贯穿全部步骤。</div>
         </div>
       </section>
 
       <section class="section" id="quality" data-nav="quality">
         <div class="container">
           <div class="section-head"><div class="section-index">16</div><div><h2>诊断与证据质量：先判断能否解释，再看结果</h2><p class="section-intro">OHDSI 把诊断结果视为主要研究产出。数据质量、队列表型、可比性、系统误差和跨库一致性构成一条证据链；仅报告效应值或模型性能无法说明结果是否可信。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">承接完整实操</span><p>上一章已经产生队列、模型和结果。本章不再增加新的估计方法，而是建立统一审查顺序：数据能否代表研究变量、队列能否代表临床表型、设计能否构造可比人群、结果是否仍受明显系统误差影响。</p></div>
           <div class="quality-list"><div class="quality-row"><span class="quality-num">01</span><h3>数据质量</h3><p>DataQualityDashboard 依据 Kahn 框架从完整性、一致性与合理性检查 OMOP CDM；官方 v5.5 页面称其包含超过 3,500 项检查，并要求网络研究参与库预先运行。</p></div><div class="quality-row"><span class="quality-num">02</span><h3>队列表型</h3><p>CohortDiagnostics 检查纳排损耗、源代码、队列重叠、发生率和患者概况。</p></div><div class="quality-row"><span class="quality-num">03</span><h3>研究设计</h3><p>查看目标与对照人群的重叠、协变量平衡、事件数和敏感性分析。</p></div><div class="quality-row"><span class="quality-num">04</span><h3>经验校准</h3><p>利用负对照刻画残余系统误差，并校准统计显著性和置信区间。</p></div><div class="quality-row"><span class="quality-num">05</span><h3>跨库一致性</h3><p>比较不同数据库的结果和诊断，判断异质性来自人群、数据还是设计。</p></div></div>
           <div class="audit-note"><strong>不要把“通过 DQD”当作研究有效性证明：</strong>DQD 主要验证 CDM 层面的数据约束与经验阈值；队列表型的临床有效性、未测量混杂、时间零点、可迁移性与软件运行仍需分别诊断。</div>
+          <div class="next-step"><strong>单库可信之后再谈跨库。</strong> 多数据库研究不是用样本量掩盖单库问题，而是让每个节点先通过相同质量门，再比较可重复性与异质性。进入 <a href="#network">第 17 章：多数据库研究</a>。</div>
         </div>
       </section>
 
@@ -1256,21 +1346,31 @@
 
           <p class="matrix-note"><strong>一句话理解：</strong>多数据库研究不是把多份患者数据汇总到一个数据库，而是把同一份可审计的研究意图送到多个数据节点，在本地生成可比较的证据，再在治理允许的范围内综合这些证据。</p>
           <p><a class="inline-source" href="https://ohdsi.github.io/TheBookOfOhdsi/NetworkResearch.html" target="_blank" rel="noreferrer">官方方法说明：OHDSI Network Research ↗</a>　<a class="inline-source" href="https://ohdsi.github.io/Strategus/" target="_blank" rel="noreferrer">执行工具：Strategus ↗</a>　<a class="inline-source" href="https://ohdsi.github.io/EvidenceSynthesis/" target="_blank" rel="noreferrer">证据综合：EvidenceSynthesis ↗</a></p>
+          <div class="next-step"><strong>主线阅读到此形成闭环。</strong> 后续两章作为查阅层：先用术语手册回查关键概念，再用核实清单确认哪些结论有官方依据、哪些仍需研究者判断。进入 <a href="#concepts">第 18 章：术语手册</a>。</div>
         </div>
       </section>
 
       <section class="section" id="matrix" data-nav="matrix">
         <div class="container">
           <div class="section-head"><div class="section-index">08</div><div><h2>方法选择矩阵：从问题落到设计</h2><p class="section-intro">先明确希望描述、估计还是预测什么，再评估数据能否支持相应设计。工具只是执行载体，不能替代 estimand 与研究方案。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">承接第 06–07 章</span><p>前两章已经把人群、索引日、风险窗和可行性准备好。现在不再问“平台里有什么功能”，而是问“这项研究究竟想得到哪一种答案”。同一批队列可以被不同方法复用，但不同方法的结论不能互相替代。</p></div>
+          <div class="method-ladder" aria-label="从描述到决策的四层药物研究问题">
+            <div class="method-rung"><b>1. 描述使用</b><span>谁在用、怎样用、持续多久</span></div>
+            <div class="method-rung"><b>2. 比较效果</b><span>A 与 B 的结局是否不同</span></div>
+            <div class="method-rung"><b>3. 评价安全</b><span>特定不良事件是否增加</span></div>
+            <div class="method-rung"><b>4. 预测个体</b><span>谁最可能在未来发生结局</span></div>
+          </div>
           <div class="matrix-wrap"><table><thead><tr><th>研究问题</th><th>首选方法</th><th>主要工具</th><th>关键假设或风险</th></tr></thead><tbody><tr><td>用药规模与路径</td><td>描述性队列与治疗路径</td><td>Characterization<br>CohortIncidence<br>TreatmentPatterns</td><td>暴露持续期、停药和换药规则保持一致</td></tr><tr><td>药物 A 与 B 的效果</td><td>新使用者主动对照队列</td><td>CohortMethod</td><td>指征混杂、时间零点、人群重叠与残余系统误差</td></tr><tr><td>短期不良事件风险</td><td>SCCS 或自我对照队列</td><td>SelfControlledCaseSeries<br>SelfControlledCohort</td><td>时间变化混杂、事件依赖暴露和时间记录误差</td></tr><tr><td>治疗后个体风险</td><td>患者级预测</td><td>PatientLevelPrediction</td><td>外部验证、校准、数据漂移和临床行动阈值</td></tr><tr><td>多数据库证据</td><td>统一协议的分布式研究</td><td>Strategus<br>EvidenceSynthesis</td><td>数据异质性、诊断一致性和结果可合并性</td></tr></tbody></table></div>
-          <p class="matrix-note">每一种方法都应配套数据质量检查、队列诊断、敏感性分析和可复现的研究包。</p>
+          <p class="matrix-note"><strong>阅读顺序：</strong>下面先从描述性的药物利用开始，因为它能暴露数据和治疗路径问题；随后进入比较效果和 PS 调整；安全性与预测则是在研究问题改变后选择的另外两条路径。每一种方法都应配套数据质量检查、队列诊断、敏感性分析和可复现的研究包。</p>
         </div>
       </section>
 
       <section class="section orange-tint" id="implementation" data-nav="implementation">
         <div class="container">
           <div class="section-head"><div class="section-index">14</div><div><h2>实施总路线：把方案变成可执行研究</h2><p class="section-intro">在进入完整案例前，先用七步总路线检查依赖关系：前一步的输出，是后一步的输入和质量门。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">承接方法选择</span><p>第 09–13 章解决了“用什么方法”。本章转而回答“怎样把方法变成可审计的研究”：从问题、数据和队列开始，经过运行与诊断，最终形成能够交付或跨库执行的研究包。</p></div>
           <div class="implementation"><div class="implementation-step"><h3>明确问题</h3><p>写清人群、暴露、对照、结局、时间和估计目标。</p></div><div class="implementation-step"><h3>评估源数据</h3><p>确认药品记录、观察期、结局信息与关键日期能支撑问题。</p></div><div class="implementation-step"><h3>验证 CDM 与映射</h3><p>检查 ETL 质量、药物标准概念、词汇版本和未映射比例。</p></div><div class="implementation-step"><h3>定义队列</h3><p>建立概念集、进入事件、纳排规则、索引日和退出策略。</p></div><div class="implementation-step"><h3>先做表征</h3><p>查看 attrition、基线差异、治疗路径、事件数和发生率。</p></div><div class="implementation-step"><h3>执行方法</h3><p>选择 HADES 软件包，固定参数并生成版本化研究包。</p></div><div class="implementation-step"><h3>解释证据</h3><p>结合主结果、诊断、负对照、敏感性分析和跨库异质性。</p></div></div>
+          <div class="next-step"><strong>下一章把路线具体化。</strong> 使用 ACEI 与噻嗪类利尿剂的比较研究作为贯穿案例，将概念集、队列、ATLAS 菜单、PS 调整、执行责任和质量门逐一对应。进入 <a href="#worked-study">第 15 章：完整实操</a>。</div>
         </div>
       </section>
 
@@ -1290,6 +1390,7 @@
             <article class="ecosystem-card"><span class="layer">ORCHESTRATION</span><h3>Strategus · EvidenceSynthesis</h3><p>Strategus 用 analysis specification 协调和执行 HADES 模块，并整理可共享结果；EvidenceSynthesis 负责跨数据源合并因果效应估计和诊断。能否合并仍取决于设计、数据和异质性判断。</p><p><a href="https://ohdsi.github.io/Strategus/" target="_blank" rel="noreferrer">Strategus ↗</a> · <a href="https://ohdsi.github.io/EvidenceSynthesis/" target="_blank" rel="noreferrer">EvidenceSynthesis ↗</a></p></article>
           </div>
           <div class="matrix-wrap" style="margin-top:42px"><table><thead><tr><th>你的任务</th><th>最小起点</th><th>常见下一步</th><th>不应误解为</th></tr></thead><tbody><tr><td>把本地数据转成 OMOP</td><td>CDM v5.5 规范 + Athena + ETL 文档</td><td>WhiteRabbit / Rabbit-in-a-Hat / Usagi</td><td>自动获得可研究数据</td></tr><tr><td>检查一个 CDM 数据源</td><td>源到目标核对 + DQD</td><td>Achilles + ARES</td><td>已经证明表型有效</td></tr><tr><td>交互设计队列或研究</td><td>ATLAS + WebAPI</td><td>CohortDiagnostics / 导出研究包</td><td>ATLAS 是数据仓库</td></tr><tr><td>批量或可复现分析</td><td>HADES 对应方法包</td><td>版本锁定 + 诊断 + 结果应用</td><td>一个单体软件包</td></tr><tr><td>多中心网络研究</td><td>统一协议与分析规范</td><td>Strategus + EvidenceSynthesis</td><td>数据伙伴自动同意参与</td></tr></tbody></table></div>
+          <div class="next-step"><strong>工具准备好后，研究从队列开始。</strong> 使用 Athena/ATLAS 建立概念集，再在 Cohort Definitions 中写清进入、纳排和退出逻辑。进入 <a href="#cohorts">第 06 章：队列与时间轴</a>。</div>
         </div>
       </section>
 
@@ -1307,6 +1408,7 @@
             <tr><td>网络规模数字</td><td><span class="status context">带日期引用</span></td><td>本页仅引用 OHDSI 2024 年公开普查；网络规模、数据更新、可用性和审批状态会变化。</td></tr>
           </tbody></table></div>
           <div class="audit-note"><strong>用于正式研究时还需要：</strong>预注册或锁定研究方案、数据源描述、伦理/治理审批、概念集与队列 JSON、CDM 和词汇版本、软件与依赖版本、数据质量结果、队列诊断、统计分析计划、负对照与敏感性分析，以及可审计的运行日志。本页是方法导航，不是可直接替代研究方案的模板。</div>
+          <div class="next-step"><strong>需要追溯原文时，继续查看官方来源。</strong> 参考资料按 CDM、词汇、ETL、队列、分析工具和网络研究分类列出，可用于方案编写和版本复核。进入 <a href="#references">参考资料</a>。</div>
         </div>
       </section>
 

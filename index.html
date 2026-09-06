@@ -1,0 +1,1456 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="OHDSI 药物研究中文指南：按研究问题、数据基础、队列设计、分析方法、ATLAS 实操、研究诊断和多数据库复现，由浅入深解释 OMOP CDM、PSM、IPTW、安全性分析与个体风险预测。">
+  <title>OHDSI 与药物分析方法：从数据到证据</title>
+  <style>
+    :root {
+      --navy: #003b55;
+      --navy-2: #0b526d;
+      --blue: #2e86ab;
+      --cyan: #55b8d1;
+      --orange: #f28c28;
+      --amber: #ffc247;
+      --red: #a33a36;
+      --green: #3a8d7c;
+      --ink: #17313c;
+      --muted: #607680;
+      --line: #d6e1e5;
+      --pale: #f2f7f8;
+      --pale-blue: #e8f3f7;
+      --pale-orange: #fff4e7;
+      --white: #fff;
+      --shadow: 0 20px 48px rgba(0, 59, 85, .10);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--white);
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+      line-height: 1.65;
+    }
+    a { color: inherit; }
+    button { font: inherit; }
+
+    .skip-link {
+      position: fixed;
+      left: 18px;
+      top: -80px;
+      z-index: 1000;
+      padding: 10px 16px;
+      color: var(--white);
+      background: var(--orange);
+      border-radius: 8px;
+    }
+    .skip-link:focus { top: 18px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 22px;
+      color: var(--white);
+      background: var(--navy);
+      overflow-y: auto;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 34px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      background:
+        linear-gradient(140deg, transparent 45%, white 46% 51%, transparent 52%),
+        linear-gradient(35deg, transparent 42%, white 43% 48%, transparent 49%),
+        linear-gradient(135deg, var(--orange), var(--amber));
+      border: 3px solid var(--white);
+      border-radius: 5px;
+      transform: rotate(4deg);
+    }
+    .sidebar small { color: #a9c7d3; }
+    .nav-title {
+      margin: 0 0 12px;
+      color: #82b5c7;
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .nav {
+      display: grid;
+      gap: 4px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .nav a {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      color: #c8dce3;
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      border-radius: 0 8px 8px 0;
+      transition: .2s ease;
+    }
+    .nav a:hover, .nav a.active {
+      color: var(--white);
+      background: rgba(255,255,255,.08);
+      border-left-color: var(--orange);
+    }
+    .nav-num { color: var(--amber); font-size: 12px; }
+    .sidebar-foot {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,.13);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    main { min-width: 0; }
+    .container { width: min(1120px, calc(100% - 64px)); margin: 0 auto; }
+    section { scroll-margin-top: 24px; }
+
+    .hero {
+      position: relative;
+      display: grid;
+      align-items: center;
+      min-height: 680px;
+      color: var(--white);
+      background:
+        radial-gradient(circle at 78% 28%, rgba(85,184,209,.28), transparent 30%),
+        radial-gradient(circle at 82% 70%, rgba(242,140,40,.22), transparent 24%),
+        var(--navy);
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -130px;
+      top: 70px;
+      width: 500px;
+      height: 500px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 50%;
+      box-shadow: 0 0 0 70px rgba(255,255,255,.025), 0 0 0 140px rgba(255,255,255,.02);
+    }
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 70px;
+      align-items: center;
+      padding: 96px 0;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--amber);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .12em;
+    }
+    .eyebrow::before { content: ""; width: 54px; height: 4px; background: var(--orange); }
+    h1 {
+      max-width: 760px;
+      margin: 24px 0 22px;
+      font-size: clamp(46px, 6vw, 78px);
+      line-height: 1.08;
+      letter-spacing: -.035em;
+    }
+    .hero-lead { max-width: 720px; margin: 0; color: #d4e6ec; font-size: 21px; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 34px; }
+    .hero-meta span {
+      padding: 7px 12px;
+      color: #cae2ea;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 999px;
+      font-size: 13px;
+    }
+    .hero-map {
+      position: relative;
+      min-height: 380px;
+    }
+    .hero-map::before, .hero-map::after {
+      content: "";
+      position: absolute;
+      inset: 50%;
+      width: 210px;
+      height: 210px;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .hero-map::after { width: 310px; height: 310px; border-style: dashed; }
+    .core {
+      position: absolute;
+      left: 50%; top: 50%;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 132px; height: 132px;
+      text-align: center;
+      background: var(--orange);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 18px 42px rgba(0,0,0,.22);
+      font-weight: 800;
+    }
+    .orbit {
+      position: absolute;
+      z-index: 3;
+      padding: 8px 12px;
+      color: var(--navy);
+      background: var(--white);
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.16);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .orbit:nth-of-type(2) { left: 0; top: 38px; }
+    .orbit:nth-of-type(3) { right: 0; top: 60px; }
+    .orbit:nth-of-type(4) { left: 2px; bottom: 44px; }
+    .orbit:nth-of-type(5) { right: 8px; bottom: 28px; }
+
+    .section { padding: 92px 0; }
+    .section.alt { background: var(--pale); }
+    .section.orange-tint { background: var(--pale-orange); }
+    .part-divider {
+      padding: 28px 0;
+      color: var(--white);
+      background: linear-gradient(105deg, var(--navy), var(--navy-2));
+      border-top: 1px solid rgba(255,255,255,.12);
+    }
+    .part-divider .container {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 26px;
+      align-items: center;
+    }
+    .part-kicker { color: var(--amber); font-size: 13px; font-weight: 800; letter-spacing: .14em; }
+    .part-divider h2 { color: var(--white); font-size: clamp(25px, 3vw, 34px); }
+    .part-divider p { margin: 5px 0 0; color: #c9dfe7; }
+    .section-head {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 26px;
+      margin-bottom: 46px;
+    }
+    .section-index { color: var(--orange); font-size: 44px; font-weight: 800; line-height: 1; }
+    h2 { margin: 0; color: var(--navy); font-size: clamp(32px, 4vw, 48px); line-height: 1.2; letter-spacing: -.025em; }
+    .section-intro { max-width: 850px; margin: 14px 0 0; color: var(--muted); font-size: 18px; }
+    h3 { margin: 0; color: var(--navy); font-size: 24px; line-height: 1.3; }
+    h4 { margin: 0; color: var(--navy); font-size: 18px; }
+
+    .principle-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .principle { padding: 26px; border-right: 1px solid var(--line); }
+    .principle:last-child { border-right: 0; }
+    .principle strong { display: block; margin-bottom: 6px; color: var(--navy); font-size: 18px; }
+    .principle p { margin: 0; color: var(--muted); font-size: 14px; }
+    .reading-path {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 40px;
+    }
+    .reading-step {
+      padding: 18px 16px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--cyan);
+      border-radius: 14px;
+    }
+    .reading-step:nth-child(4), .reading-step:nth-child(5) { border-top-color: var(--orange); }
+    .reading-step b { display: block; color: var(--navy); }
+    .reading-step span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+    .evidence-chain { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 44px; }
+    .chain-step { position: relative; min-height: 126px; padding: 20px 16px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
+    .chain-step:not(:last-child)::after { content: "›"; position: absolute; right: -11px; top: 42px; z-index: 2; color: var(--orange); font-size: 28px; font-weight: 800; }
+    .chain-step b { display: block; margin-bottom: 7px; color: var(--navy); }
+    .chain-step span { color: var(--muted); font-size: 13px; }
+    .concept-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .concept-card { padding: 24px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; }
+    .concept-card .tag { display: inline-block; margin-bottom: 13px; padding: 4px 9px; color: var(--white); background: var(--navy-2); border-radius: 999px; font-size: 12px; font-weight: 800; }
+    .concept-card:nth-child(2) .tag { background: var(--orange); }
+    .concept-card:nth-child(3) .tag { background: var(--green); }
+    .concept-card:nth-child(4) .tag { background: var(--red); }
+    .concept-card p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .mapping-flow { display: grid; grid-template-columns: 1fr 42px 1fr 42px 1fr; gap: 12px; align-items: center; margin-top: 34px; }
+    .mapping-box { padding: 24px 18px; text-align: center; background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
+    .mapping-box strong { display: block; color: var(--navy); }
+    .mapping-box small { color: var(--muted); }
+    .mapping-arrow { color: var(--orange); text-align: center; font-size: 30px; font-weight: 800; }
+    .etl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; counter-reset: etl; }
+    .etl-step { position: relative; padding: 26px 22px; background: var(--white); border-top: 4px solid var(--navy); counter-increment: etl; }
+    .etl-step::before { content: counter(etl, decimal-leading-zero); display: block; margin-bottom: 12px; color: var(--orange); font-size: 28px; font-weight: 800; }
+    .etl-step:not(:last-child) { border-right: 1px solid var(--line); }
+    .etl-step p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .cohort-builder { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .cohort-part { padding: 28px; color: var(--white); background: var(--navy-2); border-radius: 18px; }
+    .cohort-part:nth-child(2) { background: var(--orange); }
+    .cohort-part:nth-child(3) { background: var(--green); }
+    .cohort-part h3 { color: var(--white); }
+    .cohort-part p { margin-bottom: 0; color: rgba(255,255,255,.86); font-size: 14px; }
+    .character-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .character-card { padding: 28px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; }
+    .character-card p { color: var(--muted); }
+    .metric-line { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 18px; }
+    .metric-line span { padding: 5px 8px; color: var(--navy); background: var(--pale-blue); border-radius: 7px; font-size: 12px; font-weight: 700; }
+
+    .glossary-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; padding: 18px 20px; color: var(--muted); background: var(--pale); border: 1px solid var(--line); border-radius: 14px; }
+    .glossary-toolbar p { margin: 0; font-size: 14px; }
+    .glossary-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+    .glossary-stats span { padding: 5px 9px; color: var(--navy); background: var(--white); border: 1px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 700; }
+    #concepts details.glossary-group { margin-top: 12px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; transition: border-color .2s ease, box-shadow .2s ease; }
+    #concepts details.glossary-group[open] { border-color: #aacbd7; box-shadow: 0 14px 34px rgba(0, 59, 85, .08); }
+    .glossary-title { display: flex; align-items: center; gap: 14px; margin: 0; padding: 18px 22px; border: 0; cursor: pointer; list-style: none; user-select: none; }
+    .glossary-title::-webkit-details-marker { display: none; }
+    .glossary-title span { display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 auto; color: var(--white); background: var(--orange); border-radius: 50%; font-weight: 800; }
+    .glossary-title h3 { flex: 1; font-size: 20px; }
+    .glossary-title::after { content: "展开  +"; color: var(--muted); font-size: 13px; font-weight: 700; }
+    details[open] > .glossary-title { background: var(--pale-blue); }
+    details[open] > .glossary-title::after { content: "收起  −"; color: var(--navy); }
+    #concepts .glossary-group > .term-grid { padding: 18px; border-top: 1px solid var(--line); }
+    .term-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .term { padding: 22px 24px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
+    .term h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+    .term h4 small { color: var(--orange); font-size: 12px; font-weight: 700; }
+    .term p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .term .pitfall { margin-top: 12px; padding-top: 10px; color: #7b4a16; border-top: 1px dashed #e3c49e; font-size: 13px; }
+    .equation { display: inline-block; margin-top: 8px; padding: 5px 8px; color: var(--navy); background: var(--pale-blue); border-radius: 6px; font-size: 12px; font-weight: 700; }
+
+    .study-brief { display: grid; grid-template-columns: 1.25fr .75fr; gap: 28px; padding: 32px; color: var(--white); background: var(--navy); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .study-brief h3 { color: var(--white); font-size: 28px; }
+    .study-brief p { color: #d5e7ed; }
+    .brief-facts { display: grid; gap: 9px; }
+    .brief-fact { padding: 10px 12px; background: rgba(255,255,255,.08); border-radius: 9px; font-size: 13px; }
+    .brief-fact b { color: var(--amber); }
+    .stage-list { display: grid; gap: 18px; margin-top: 38px; counter-reset: workflow; }
+    .stage-card { display: grid; grid-template-columns: 76px 1.05fr 1.35fr .8fr; gap: 20px; padding: 24px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; counter-increment: workflow; }
+    .stage-no::before { content: counter(workflow, decimal-leading-zero); display: grid; place-items: center; width: 58px; height: 58px; color: var(--white); background: var(--orange); border-radius: 50%; font-size: 20px; font-weight: 800; }
+    .stage-card h3 { font-size: 20px; }
+    .stage-card p { margin: 7px 0 0; color: var(--muted); font-size: 14px; }
+    .op-path { padding: 14px 16px; color: var(--navy); background: var(--pale-blue); border-radius: 10px; font-size: 13px; }
+    .op-path b { display: block; margin-bottom: 4px; color: var(--blue); }
+    .owner { padding-left: 16px; border-left: 3px solid var(--green); }
+    .owner b { display: block; color: var(--green); font-size: 13px; }
+    .gate { grid-column: 2 / -1; padding-top: 13px; color: #75440f; border-top: 1px dashed #e2c399; font-size: 13px; }
+    .gate strong { color: var(--orange); }
+
+    .ps-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .ps-method { padding: 30px; background: var(--white); border: 1px solid var(--line); border-top: 6px solid var(--blue); border-radius: 18px; }
+    .ps-method.iptw { border-top-color: var(--orange); }
+    .ps-method > p { color: var(--muted); }
+    .config-list { display: grid; gap: 10px; margin: 22px 0 0; padding: 0; list-style: none; counter-reset: config; }
+    .config-list li { position: relative; padding: 13px 14px 13px 46px; background: var(--pale); border-radius: 9px; counter-increment: config; font-size: 14px; }
+    .config-list li::before { content: counter(config); position: absolute; left: 14px; top: 13px; display: grid; place-items: center; width: 22px; height: 22px; color: var(--white); background: var(--navy); border-radius: 50%; font-size: 12px; font-weight: 800; }
+    .config-list b { color: var(--navy); }
+    .diagnostic-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+    .diagnostic { padding: 20px; background: var(--white); border-left: 4px solid var(--green); border-radius: 0 12px 12px 0; }
+    .diagnostic p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+    .choice-table { margin-top: 26px; overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+    .choice-table table { min-width: 760px; }
+
+    .question-selector {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 34px;
+      align-items: stretch;
+    }
+    .question-buttons { display: grid; gap: 12px; }
+    .question-button {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 14px;
+      align-items: center;
+      width: 100%;
+      padding: 15px 18px;
+      color: var(--ink);
+      text-align: left;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+    .question-button:hover, .question-button.active {
+      border-color: var(--blue);
+      transform: translateX(4px);
+      box-shadow: 0 12px 28px rgba(0,59,85,.09);
+    }
+    .question-icon {
+      display: grid;
+      place-items: center;
+      width: 48px; height: 48px;
+      color: var(--white);
+      background: var(--navy-2);
+      border-radius: 50%;
+      font-weight: 800;
+    }
+    .question-button[data-key="effect"] .question-icon { background: var(--orange); }
+    .question-button[data-key="safety"] .question-icon { background: var(--red); }
+    .question-button[data-key="prediction"] .question-icon { background: var(--green); }
+    .question-button strong { display: block; color: var(--navy); font-size: 18px; }
+    .question-button small { color: var(--muted); }
+    .recommendation {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 36px;
+      color: var(--white);
+      background: var(--navy);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .recommendation::after {
+      content: "";
+      position: absolute;
+      right: -80px; bottom: -110px;
+      width: 280px; height: 280px;
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 50%;
+    }
+    .recommendation .label { color: var(--amber); font-size: 13px; font-weight: 700; letter-spacing: .12em; }
+    .recommendation h3 { margin-top: 12px; color: var(--white); font-size: 34px; }
+    .recommendation p { position: relative; z-index: 1; max-width: 680px; color: #d5e7ed; font-size: 17px; }
+    .tool-line { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; }
+    .tool-line span { padding: 6px 10px; color: var(--navy); background: var(--amber); border-radius: 999px; font-size: 13px; font-weight: 700; }
+
+    .foundation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: center; }
+    .definition-list { display: grid; gap: 24px; }
+    .definition-item { display: grid; grid-template-columns: 58px 1fr; gap: 18px; }
+    .definition-num { display: grid; place-items: center; width: 50px; height: 50px; color: var(--white); background: var(--blue); border-radius: 50%; font-weight: 800; }
+    .definition-item p { margin: 6px 0 0; color: var(--muted); }
+    .timeline {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.35fr;
+      gap: 14px;
+      align-items: center;
+      min-height: 310px;
+      padding: 42px 28px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .timeline::before { content: ""; position: absolute; left: 8%; right: 8%; top: 50%; height: 4px; background: var(--navy); }
+    .time-block { position: relative; z-index: 1; padding: 24px 16px; color: var(--white); text-align: center; background: var(--blue); border-radius: 14px; font-weight: 700; }
+    .time-block.index { background: var(--orange); transform: scale(1.05); }
+    .time-block.risk { background: var(--red); }
+    .time-block small { display: block; margin-top: 5px; opacity: .85; font-weight: 400; }
+
+    .method-layout { display: grid; grid-template-columns: .85fr 1.15fr; gap: 46px; align-items: start; }
+    .method-summary {
+      position: sticky;
+      top: 30px;
+      padding: 30px;
+      background: var(--white);
+      border-left: 6px solid var(--orange);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      box-shadow: var(--shadow);
+    }
+    .method-summary .answer { margin: 0 0 18px; color: var(--muted); font-size: 16px; }
+    .method-summary dl { margin: 0; }
+    .method-summary dt { margin-top: 16px; color: var(--navy); font-weight: 800; }
+    .method-summary dd { margin: 4px 0 0; color: var(--muted); }
+    .method-flow { display: grid; gap: 16px; }
+    .flow-step {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 18px;
+      align-items: start;
+      padding: 22px 24px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .flow-step .num { color: var(--orange); font-size: 30px; font-weight: 800; line-height: 1; }
+    .flow-step p { margin: 7px 0 0; color: var(--muted); }
+    .flow-step code { color: var(--navy); background: var(--pale-blue); border-radius: 5px; padding: 2px 6px; font-family: inherit; font-weight: 700; }
+
+    .pathway {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 24px;
+      margin-top: 36px;
+    }
+    .path-node { position: relative; text-align: center; }
+    .path-node:not(:last-child)::after { content: ""; position: absolute; right: -22px; top: 38px; width: 20px; height: 2px; background: var(--muted); }
+    .path-node strong { display: grid; place-items: center; min-height: 76px; padding: 12px; color: var(--white); background: var(--navy-2); border-radius: 14px; }
+    .path-node:nth-child(2) strong { background: var(--blue); }
+    .path-node:nth-child(3) strong { background: var(--orange); }
+    .path-node:nth-child(4) strong { background: var(--red); }
+    .path-node:nth-child(5) strong { background: var(--green); }
+    .path-node span { display: block; margin-top: 12px; color: var(--muted); font-size: 14px; }
+    .tool-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-top: 52px; }
+    .tool-item { padding-top: 18px; border-top: 4px solid var(--blue); }
+    .tool-item:nth-child(2) { border-color: var(--green); }
+    .tool-item:nth-child(3) { border-color: var(--orange); }
+    .tool-item:nth-child(4) { border-color: var(--navy); }
+    .tool-item p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+
+    .comparison-lanes { display: grid; grid-template-columns: 180px 1fr; gap: 18px 28px; align-items: center; }
+    .lane-label { padding: 18px; color: var(--white); text-align: center; background: var(--blue); border-radius: 12px; font-weight: 800; }
+    .lane-label.comparator { background: var(--orange); }
+    .lane {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+    .lane span { position: relative; padding: 14px 10px; text-align: center; background: var(--white); border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+    .lane span:not(:last-child)::after { content: "›"; position: absolute; right: -11px; top: 50%; color: var(--muted); font-size: 24px; transform: translateY(-52%); }
+    .decision-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 46px; }
+    .decision { padding: 22px 0 0; border-top: 4px solid var(--orange); }
+    .decision p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+
+    .safety-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .safety-panel { padding: 30px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); }
+    .safety-panel:first-child { border-top: 6px solid var(--red); }
+    .safety-panel:last-child { border-top: 6px solid var(--navy-2); }
+    .safety-panel > p { color: var(--muted); }
+    .mini-time { position: relative; display: grid; grid-template-columns: 1fr .7fr 1fr; gap: 10px; align-items: center; margin: 36px 0; }
+    .mini-time::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 3px; background: var(--navy); }
+    .mini-time span { position: relative; z-index: 1; padding: 14px 9px; color: var(--white); text-align: center; background: var(--blue); border-radius: 10px; font-size: 13px; }
+    .mini-time span:nth-child(2) { background: var(--orange); }
+    .mini-time span:nth-child(3) { background: var(--red); }
+    .caution { padding: 16px 18px; color: #772c29; background: #fbe9e7; border-radius: 12px; font-size: 14px; }
+
+    .prediction-figure { position: relative; display: grid; grid-template-columns: 1.2fr .7fr 1.3fr; gap: 16px; align-items: center; margin-bottom: 50px; padding: 44px 28px; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .prediction-figure::before { content: ""; position: absolute; left: 6%; right: 6%; top: 50%; height: 4px; background: var(--navy); }
+    .prediction-block { position: relative; z-index: 1; padding: 22px; color: var(--white); text-align: center; background: var(--blue); border-radius: 14px; font-weight: 800; }
+    .prediction-block:nth-child(2) { background: var(--orange); }
+    .prediction-block:nth-child(3) { background: var(--red); }
+    .prediction-block small { display: block; margin-top: 6px; font-weight: 400; }
+    .prediction-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .prediction-step { padding: 20px; border-left: 3px solid var(--blue); }
+    .prediction-step:nth-child(2) { border-color: var(--orange); }
+    .prediction-step:nth-child(3) { border-color: var(--green); }
+    .prediction-step:nth-child(4) { border-color: var(--red); }
+    .prediction-step p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+
+    .quality-list { display: grid; gap: 0; }
+    .quality-row { display: grid; grid-template-columns: 78px 220px 1fr; gap: 22px; align-items: center; min-height: 110px; border-bottom: 1px solid var(--line); }
+    .quality-row:last-child { border-bottom: 0; }
+    .quality-num { display: grid; place-items: center; width: 56px; height: 56px; color: var(--white); background: var(--navy); border-radius: 50%; font-weight: 800; }
+    .quality-row:nth-child(2) .quality-num { background: var(--blue); }
+    .quality-row:nth-child(3) .quality-num { background: var(--orange); }
+    .quality-row:nth-child(4) .quality-num { background: var(--red); }
+    .quality-row:nth-child(5) .quality-num { background: var(--green); }
+    .quality-row p { color: var(--muted); }
+
+    .network {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr 1.2fr 1fr;
+      gap: 24px;
+      align-items: center;
+      padding: 34px;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .sources { display: grid; gap: 10px; }
+    .source { padding: 12px; color: var(--white); text-align: center; background: var(--blue); border-radius: 9px; font-size: 13px; }
+    .source:nth-child(2) { background: var(--orange); }
+    .source:nth-child(3) { background: var(--green); }
+    .source:nth-child(4) { background: var(--red); }
+    .network-stage { position: relative; padding: 28px 18px; color: var(--white); text-align: center; background: var(--navy-2); border-radius: 16px; font-weight: 800; }
+    .network-stage::after { content: "›"; position: absolute; right: -21px; top: 50%; color: var(--muted); font-size: 35px; transform: translateY(-52%); }
+    .network-stage.local { background: var(--orange); }
+    .network-stage.final { background: var(--green); }
+    .network-stage.final::after { display: none; }
+    .network-stage small { display: block; margin-top: 8px; opacity: .88; font-weight: 400; }
+    .network-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
+    .network-role { padding: 26px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; }
+    .network-role h3 { display: flex; align-items: center; gap: 10px; }
+    .network-role h3 span { display: inline-grid; place-items: center; width: 32px; height: 32px; color: var(--white); background: var(--navy-2); border-radius: 50%; font-size: 13px; }
+    .network-role:last-child h3 span { background: var(--orange); }
+    .network-role ul { margin: 16px 0 0; padding-left: 20px; color: var(--muted); }
+    .network-role li + li { margin-top: 8px; }
+    .network-phase { margin-top: 42px; }
+    .network-phase > h3 { margin-bottom: 18px; }
+    .network-gate { margin-top: 22px; padding: 20px 22px; color: #244a59; background: var(--pale-blue); border-left: 5px solid var(--green); border-radius: 0 12px 12px 0; }
+
+    .matrix-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; }
+    table { width: 100%; min-width: 860px; border-collapse: collapse; background: var(--white); }
+    th, td { padding: 18px 20px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { color: var(--white); background: var(--navy); font-size: 15px; }
+    td:first-child { color: var(--navy); font-weight: 800; }
+    tbody tr:nth-child(even) { background: var(--pale); }
+    tbody tr:last-child td { border-bottom: 0; }
+    .matrix-note { margin: 20px 0 0; padding: 16px 20px; color: #6f3d08; background: #fff0dc; border-left: 4px solid var(--orange); }
+
+    .implementation { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; counter-reset: steps; }
+    .implementation-step { position: relative; padding: 30px 20px 24px; border-top: 3px solid var(--navy); counter-increment: steps; }
+    .implementation-step::before { content: counter(steps, decimal-leading-zero); display: block; margin-bottom: 15px; color: var(--orange); font-size: 30px; font-weight: 800; }
+    .implementation-step:not(:last-child)::after { content: ""; position: absolute; right: 0; top: -7px; width: 12px; height: 12px; background: var(--navy); border-radius: 50%; }
+    .implementation-step p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+
+    .fact-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 38px; }
+    .fact-card { padding: 25px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; }
+    .fact-card .fact-kicker { display: block; margin-bottom: 9px; color: var(--orange); font-size: 12px; font-weight: 800; letter-spacing: .1em; }
+    .fact-card strong { display: block; color: var(--navy); font-size: 24px; line-height: 1.2; }
+    .fact-card p { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+    .inline-source { color: var(--navy-2); font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    .audit-note { margin-top: 28px; padding: 20px 22px; color: #244a59; background: var(--pale-blue); border-left: 5px solid var(--blue); border-radius: 0 12px 12px 0; }
+    .audit-note strong { color: var(--navy); }
+    .official-figure {
+      margin: 38px 0 0;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 14px 34px rgba(0, 59, 85, .08);
+      overflow: hidden;
+    }
+    .official-figure > a { display: block; padding: 18px; background: #f8fbfc; }
+    .official-figure img { display: block; width: 100%; height: auto; max-height: 760px; object-fit: contain; }
+    .official-figure figcaption { padding: 18px 22px 20px; color: var(--muted); font-size: 14px; }
+    .official-figure figcaption strong { display: block; margin-bottom: 5px; color: var(--navy); font-size: 16px; }
+    .official-figure figcaption a { color: var(--navy-2); font-weight: 700; }
+    .figure-label { display: inline-block; margin-bottom: 8px; padding: 3px 8px; color: var(--white); background: var(--orange); border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+    .figure-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 38px; }
+    .figure-grid .official-figure { margin-top: 0; }
+    .figure-grid .official-figure > a { min-height: 340px; display: grid; place-items: center; }
+    .figure-grid .official-figure img { max-height: 500px; }
+    .figure-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
+    .ecosystem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .ecosystem-card { padding: 26px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; }
+    .ecosystem-card .layer { display: inline-block; margin-bottom: 13px; padding: 4px 9px; color: var(--white); background: var(--navy-2); border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+    .ecosystem-card:nth-child(2n) .layer { background: var(--orange); }
+    .ecosystem-card:nth-child(3n) .layer { background: var(--green); }
+    .ecosystem-card p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .ecosystem-card a { color: var(--navy-2); font-weight: 700; }
+    .status { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .status.ok { color: #176053; background: #dff3ed; }
+    .status.context { color: #75440f; background: #fff0dc; }
+    .status.limit { color: #7a302d; background: #fbe9e7; }
+
+    .references { color: var(--white); background: var(--navy); }
+    .references h2 { color: var(--white); }
+    .references .section-intro { color: #c7dce4; }
+    .reference-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 34px; }
+    .reference-link { display: block; padding: 17px 0; color: #d8e8ed; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.14); }
+    .reference-link:hover { color: var(--amber); }
+    .reference-link strong { display: block; color: var(--amber); }
+    .source-note { margin-top: 38px; color: #a9c7d3; font-size: 13px; }
+    footer { padding: 26px 0; color: var(--muted); background: #eef4f6; font-size: 13px; }
+
+    details { margin-top: 18px; border-top: 1px solid var(--line); }
+    summary { padding: 14px 0; color: var(--navy); cursor: pointer; font-weight: 700; }
+    details p { margin-top: 0; color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 1020px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; padding: 18px 24px; }
+      .sidebar .brand { margin-bottom: 14px; }
+      .nav-title, .sidebar-foot { display: none; }
+      .nav { display: flex; overflow-x: auto; }
+      .nav a { grid-template-columns: auto auto; white-space: nowrap; border-left: 0; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0; }
+      .nav a:hover, .nav a.active { border-left-color: transparent; border-bottom-color: var(--orange); }
+      .hero-grid, .question-selector, .foundation-grid, .method-layout { grid-template-columns: 1fr; }
+      .part-divider .container { grid-template-columns: 1fr; gap: 4px; }
+      .reading-path { grid-template-columns: repeat(2, 1fr); }
+      .evidence-chain { grid-template-columns: repeat(3, 1fr); }
+      .concept-grid, .etl-grid, .fact-grid, .ecosystem-grid { grid-template-columns: repeat(2, 1fr); }
+      .figure-grid { grid-template-columns: 1fr; }
+      .study-brief { grid-template-columns: 1fr; }
+      .stage-card { grid-template-columns: 66px 1fr 1fr; }
+      .diagnostic-grid { grid-template-columns: repeat(2, 1fr); }
+      .owner { grid-column: 2 / -1; border-left: 0; padding-left: 0; }
+      .hero-map { min-height: 330px; }
+      .method-summary { position: relative; top: 0; }
+      .network { grid-template-columns: 1fr 1fr; }
+      .network-roles { grid-template-columns: 1fr; }
+      .network-stage:nth-child(2)::after { display: none; }
+    }
+    @media (max-width: 760px) {
+      .container { width: min(100% - 36px, 1120px); }
+      .reading-path { grid-template-columns: 1fr; }
+      .section { padding: 68px 0; }
+      .section-head { grid-template-columns: 1fr; gap: 12px; }
+      .section-index { font-size: 24px; }
+      .principle-strip, .tool-grid, .decision-grid, .prediction-steps, .safety-grid, .implementation, .reference-grid, .evidence-chain, .concept-grid, .etl-grid, .cohort-builder, .character-grid, .term-grid, .fact-grid, .ecosystem-grid { grid-template-columns: 1fr; }
+      .chain-step:not(:last-child)::after, .mapping-arrow { display: none; }
+      .mapping-flow { grid-template-columns: 1fr; }
+      .stage-card { grid-template-columns: 54px 1fr; gap: 14px; }
+      .stage-no::before { width: 46px; height: 46px; font-size: 16px; }
+      .op-path, .owner, .gate { grid-column: 2; }
+      .ps-compare, .diagnostic-grid { grid-template-columns: 1fr; }
+      .principle { border-right: 0; border-bottom: 1px solid var(--line); }
+      .principle:last-child { border-bottom: 0; }
+      .pathway { grid-template-columns: 1fr; gap: 12px; }
+      .path-node:not(:last-child)::after { display: none; }
+      .comparison-lanes { grid-template-columns: 1fr; }
+      .lane { grid-template-columns: 1fr 1fr; }
+      .quality-row { grid-template-columns: 64px 1fr; padding: 20px 0; }
+      .quality-row p { grid-column: 2; margin: 0; }
+      .network { grid-template-columns: 1fr; }
+      .network-stage::after { display: none; }
+      .hero-map { display: none; }
+      .hero-grid { padding: 72px 0; }
+      .timeline, .prediction-figure { grid-template-columns: 1fr; }
+      .timeline::before, .prediction-figure::before { display: none; }
+      .glossary-toolbar { align-items: flex-start; }
+      .glossary-title { padding: 16px; }
+      .glossary-title h3 { font-size: 17px; }
+      .glossary-title::after { content: "+"; font-size: 20px; }
+      details[open] > .glossary-title::after { content: "−"; }
+      #concepts .glossary-group > .term-grid { padding: 12px; }
+    }
+    @media print {
+      .sidebar, .question-buttons, .skip-link { display: none !important; }
+      .layout { display: block; }
+      .hero { min-height: 0; break-after: page; }
+      .hero-map { display: none; }
+      .hero-grid { grid-template-columns: 1fr; padding: 80px 0; }
+      .section { break-inside: avoid; padding: 50px 0; }
+      .method-summary { position: static; box-shadow: none; }
+      .recommendation { display: block; }
+      #concepts details.glossary-group:not([open]) > .term-grid { display: grid; }
+      .glossary-title::after { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#content">跳到主要内容</a>
+  <div class="layout">
+    <aside class="sidebar" aria-label="页面导航">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>OHDSI<br><small>药物分析方法</small></span></div>
+      <p class="nav-title">内容导航</p>
+      <ol class="nav">
+        <li><a href="#overview"><span class="nav-num">00</span><span>OHDSI 全景</span></a></li>
+        <li><a href="#questions"><span class="nav-num">01</span><span>问题与路线</span></a></li>
+        <li><a href="#foundation"><span class="nav-num">02</span><span>CDM 数据结构</span></a></li>
+        <li><a href="#vocabulary"><span class="nav-num">03</span><span>药物标准词汇</span></a></li>
+        <li><a href="#etl"><span class="nav-num">04</span><span>ETL 与数据质量</span></a></li>
+        <li><a href="#ecosystem"><span class="nav-num">05</span><span>工具与平台分工</span></a></li>
+        <li><a href="#cohorts"><span class="nav-num">06</span><span>队列与时间轴</span></a></li>
+        <li><a href="#characterization"><span class="nav-num">07</span><span>表征与可行性</span></a></li>
+        <li><a href="#matrix"><span class="nav-num">08</span><span>方法选择矩阵</span></a></li>
+        <li><a href="#utilization"><span class="nav-num">09</span><span>药物利用</span></a></li>
+        <li><a href="#effect"><span class="nav-num">10</span><span>比较效果</span></a></li>
+        <li><a href="#ps-methods"><span class="nav-num">11</span><span>PSM / IPTW</span></a></li>
+        <li><a href="#safety"><span class="nav-num">12</span><span>药物安全性</span></a></li>
+        <li><a href="#prediction"><span class="nav-num">13</span><span>个体风险预测</span></a></li>
+        <li><a href="#implementation"><span class="nav-num">14</span><span>实施总路线</span></a></li>
+        <li><a href="#worked-study"><span class="nav-num">15</span><span>完整实操</span></a></li>
+        <li><a href="#quality"><span class="nav-num">16</span><span>诊断与证据质量</span></a></li>
+        <li><a href="#network"><span class="nav-num">17</span><span>多数据库研究</span></a></li>
+        <li><a href="#concepts"><span class="nav-num">18</span><span>术语手册</span></a></li>
+        <li><a href="#verification"><span class="nav-num">19</span><span>核实结论</span></a></li>
+      </ol>
+      <div class="sidebar-foot">截至 2026-09-06 核实。主要依据 OHDSI 官方站点、OMOP CDM v5.5 规范、The Book of OHDSI 及 HADES 官方文档。</div>
+    </aside>
+
+    <main id="content">
+      <header class="hero">
+        <div class="container hero-grid">
+          <div>
+            <span class="eyebrow">OBSERVATIONAL HEALTH DATA SCIENCES</span>
+            <h1>OHDSI<br>与药物分析</h1>
+            <p class="hero-lead">一份从概念到实践的中文全景指南：先理解数据与研究问题，再完成队列设计、方法选择、ATLAS 配置、研究诊断与多数据库复现。</p>
+            <div class="hero-meta"><span>OMOP CDM v5.5</span><span>标准词汇</span><span>ATLAS</span><span>HADES</span><span>分布式研究</span></div>
+          </div>
+          <div class="hero-map" aria-label="OHDSI 分析生态示意图">
+            <div class="core">OMOP CDM</div>
+            <span class="orbit">ATLAS 研究设计</span>
+            <span class="orbit">HADES 分析执行</span>
+            <span class="orbit">队列与表型</span>
+            <span class="orbit">诊断与校准</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="section" id="overview" data-nav="overview">
+        <div class="container">
+          <div class="section-head"><div class="section-index">00</div><div><h2>OHDSI 是什么：社区、标准与证据网络</h2><p class="section-intro">OHDSI 全称 Observational Health Data Sciences and Informatics，通常读作 “Odyssey”。它不是一家数据供应商，也不是一个集中式患者数据库，而是一个以开放科学方式协作的、多利益相关方、跨学科社区。</p></div></div>
+          <div class="foundation-grid">
+            <div>
+              <h3>使命与工作方式</h3>
+              <p class="section-intro" style="font-size:16px">官方使命是赋能社区协作生成证据，以促进更好的健康决策和照护。其核心组合是：开放社区数据标准、标准化词汇、开源分析软件、方法学研究，以及各数据伙伴自愿加入的网络研究。</p>
+              <p><a class="inline-source" href="https://www.ohdsi.org/who-we-are/mission-vision-values/" target="_blank" rel="noreferrer">来源：OHDSI Mission, Vision &amp; Values ↗</a></p>
+            </div>
+            <div class="timeline" aria-label="OHDSI 从数据到证据的分布式协作模式"><div class="time-block">本地数据<small>按机构治理，不自动对外共享</small></div><div class="time-block index">OMOP + 标准分析<small>统一语义、设计与代码</small></div><div class="time-block risk">汇总证据<small>共享获批的聚合结果与诊断</small></div></div>
+          </div>
+          <div class="fact-grid">
+            <article class="fact-card"><span class="fact-kicker">LATEST VERSION</span><strong>OMOP CDM v5.5</strong><p>官方 v5.5 规范明确称其为最新版本；工具对 v5.5 新表和新字段的支持程度并不完全相同，部署前应查看兼容矩阵。</p></article>
+            <article class="fact-card"><span class="fact-kicker">2024 CENSUS</span><strong>544 个数据源</strong><p>OHDSI 2024 年公开材料列出 54 个国家、超过 9.74 亿条患者记录。该数字是有日期的数据源普查，不等同于今天可即时访问的数据库。</p></article>
+            <article class="fact-card"><span class="fact-kicker">OPEN SCIENCE</span><strong>标准、代码、讨论开放</strong><p>CDM、分析软件与研究材料强调公开和可复现；患者级健康数据仍受各机构法律、伦理与治理要求约束。</p></article>
+            <article class="fact-card"><span class="fact-kicker">RESEARCH MODEL</span><strong>逐研究自愿加入</strong><p>数据伙伴对每项网络研究分别决定是否参与；“加入 OHDSI”不意味着交出数据库或预先授权所有研究。</p></article>
+          </div>
+          <div class="audit-note"><strong>数字口径说明：</strong>“544 个数据源 / 54 个国家 / 9.74 亿条患者记录”来自 OHDSI 2024 年公开旅程报告。不同来源可能覆盖同一人群，且网络成员、可用时间范围和研究审批会变化，因此本页不把它解释为去重后的独立患者人数，也不把它当作当前可调用数据量。</div>
+          <div class="principle-strip" style="margin-top:42px"><div class="principle"><strong>OHDSI</strong><p>开放科学社区与协作网络。</p></div><div class="principle"><strong>OMOP CDM</strong><p>由 OHDSI 社区维护的观测性健康数据共同模型。</p></div><div class="principle"><strong>HADES / ATLAS</strong><p>前者是分析 R 包体系，后者是与 WebAPI 配套的研究设计和分析平台；两者不是 CDM 本身。</p></div></div>
+        </div>
+      </section>
+
+      <section class="section alt" id="questions" data-nav="questions">
+        <div class="container">
+          <div class="section-head"><div class="section-index">01</div><div><h2>先确定问题，再沿一条主线阅读</h2><p class="section-intro">OHDSI 提供的是一组互补的方法。先区分描述、因果、安全性与预测，再沿“数据—队列—方法—执行—诊断”推进；不要从软件菜单反推研究问题。</p></div></div>
+          <div class="question-selector">
+            <div class="question-buttons" role="tablist" aria-label="研究问题选择器">
+              <button class="question-button active" type="button" role="tab" aria-selected="true" data-key="utilization"><span class="question-icon">U</span><span><strong>药物利用</strong><small>谁在用、何时开始、持续多久、如何换药</small></span></button>
+              <button class="question-button" type="button" role="tab" aria-selected="false" data-key="effect"><span class="question-icon">E</span><span><strong>比较效果</strong><small>药物 A 与 B 对临床结局的相对影响</small></span></button>
+              <button class="question-button" type="button" role="tab" aria-selected="false" data-key="safety"><span class="question-icon">S</span><span><strong>药物安全性</strong><small>暴露后不良事件风险是否升高</small></span></button>
+              <button class="question-button" type="button" role="tab" aria-selected="false" data-key="prediction"><span class="question-icon">P</span><span><strong>患者级预测</strong><small>某位患者未来发生结局的概率</small></span></button>
+            </div>
+            <article class="recommendation" aria-live="polite">
+              <div><span class="label">推荐分析路径</span><h3 id="recommendation-title">描述性队列与治疗路径</h3></div>
+              <p id="recommendation-body">建立新使用者或现患使用者队列，描述起始、持续、停药、换药、加药和再启动。结果以人数、发生率、持续时间和治疗序列为主。</p>
+              <div class="tool-line" id="recommendation-tools"><span>Characterization</span><span>CohortIncidence</span><span>TreatmentPatterns</span><span>ATLAS</span></div>
+            </article>
+          </div>
+          <div class="evidence-chain" aria-label="从数据到证据的完整链路">
+            <div class="chain-step"><b>原始数据</b><span>病历、理赔、登记和检验数据</span></div><div class="chain-step"><b>ETL</b><span>结构转换与代码映射</span></div><div class="chain-step"><b>OMOP CDM</b><span>统一领域、字段和标准概念</span></div><div class="chain-step"><b>队列</b><span>进入、纳排、索引日与退出</span></div><div class="chain-step"><b>分析</b><span>表征、估计、安全性或预测</span></div><div class="chain-step"><b>诊断</b><span>质量、偏倚、校准与异质性</span></div>
+          </div>
+          <div class="reading-path" aria-label="本文五部分阅读路线">
+            <div class="reading-step"><b>第一部分｜认识问题</b><span>OHDSI 是什么，四类药物研究各回答什么。</span></div>
+            <div class="reading-step"><b>第二部分｜准备数据</b><span>理解 CDM、词汇、ETL 以及 ATLAS/HADES 的分工。</span></div>
+            <div class="reading-step"><b>第三部分｜设计分析</b><span>构建队列，评估可行性，再选择利用、效果、安全或预测方法。</span></div>
+            <div class="reading-step"><b>第四部分｜落地执行</b><span>按完整案例完成平台配置、运行、诊断和跨库复现。</span></div>
+            <div class="reading-step"><b>第五部分｜查阅与核实</b><span>用术语手册补概念，用边界清单避免过度解释。</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="foundation" data-nav="foundation">
+        <div class="container">
+          <div class="section-head"><div class="section-index">02</div><div><h2>OMOP CDM：让分析来到数据</h2><p class="section-intro">CDM 将不同来源的数据转换为统一的关系型结构，使同一套分析代码可以在多个数据节点本地运行，而不必汇集患者级数据。</p></div></div>
+          <div class="foundation-grid">
+            <div class="definition-list">
+              <div class="definition-item"><span class="definition-num">1</span><div><h3>以人为中心</h3><p>临床事件连接到 PERSON，并保留日期或起始日期，支持纵向观察。</p></div></div>
+              <div class="definition-item"><span class="definition-num">2</span><div><h3>按领域归位</h3><p>疾病、药物、操作、检验等进入各自领域；概念的 Domain 决定记录应落入的表和字段。</p></div></div>
+              <div class="definition-item"><span class="definition-num">3</span><div><h3>标准概念驱动</h3><p>标准化分析读取 <code>*_CONCEPT_ID</code>；源代码与源概念同时保留，用于追溯和质量核查。</p></div></div>
+              <div class="definition-item"><span class="definition-num">4</span><div><h3>数据与结果分离</h3><p>临床与词汇表作为只读分析基础，队列和分析结果写入独立 Results Schema。</p></div></div>
+            </div>
+            <div class="timeline" aria-label="CDM 的纵向研究视角"><div class="time-block">既往病史<small>条件、药物、操作和检验</small></div><div class="time-block index">临床事件<small>统一 PERSON 与日期锚点</small></div><div class="time-block risk">后续观察<small>暴露、结局与医疗利用</small></div></div>
+          </div>
+          <div class="principle-strip" style="margin-top:52px"><div class="principle"><strong>结构标准化</strong><p>统一表、字段、主外键和时间表达。</p></div><div class="principle"><strong>内容标准化</strong><p>通过标准词汇统一临床含义。</p></div><div class="principle"><strong>分析标准化</strong><p>同一设计和代码跨数据库复用。</p></div></div>
+          <figure class="official-figure">
+            <a href="assets/ohdsi-official/cdm-diagram.png" target="_blank" aria-label="打开 OMOP CDM 官方数据模型图原图"><img src="assets/ohdsi-official/cdm-diagram.png" alt="OMOP CDM 官方数据模型图，展示标准化临床数据、卫生系统数据、派生表、健康经济表、元数据和标准词汇表之间的关系" width="4225" height="3329" loading="lazy"></a>
+            <figcaption><span class="figure-label">OFFICIAL FIGURE</span><strong>OMOP CDM 数据模型总览</strong>读图顺序：先看左侧以 PERSON 为中心的临床事件表，再看中间的系统数据、派生表和 Results Schema，最后看右侧为所有领域提供统一语义的标准词汇表。药物分析的事实记录主要进入 <code>DRUG_EXPOSURE</code>，连续暴露可派生为 <code>DRUG_ERA</code>。<a href="https://ohdsi.github.io/TheBookOfOhdsi/CommonDataModel.html" target="_blank" rel="noreferrer">来源：The Book of OHDSI，Common Data Model ↗</a></figcaption>
+          </figure>
+          <div class="audit-note"><strong>版本核实：</strong>截至 2026-09-06，官方 v5.5 规范明确称其为最新版本。v5.5 相比 v5.4 新增 7 个非必填字段，并增加 PACK_CONTENT、CONCEPT_METADATA、CONCEPT_RELATIONSHIP_METADATA 三张词汇相关表。官方兼容矩阵显示所列工具支持 v5.4 既有功能，但除 CDM R package 外，对 v5.5 新特性的完整、已测试发布支持仍标为待完成。官网“CDM 变更申请流程”页仍残留“当前 v5.4”的旧文案，本页以最新版本规范为准。</div>
+        </div>
+      </section>
+
+      <section class="section alt" id="vocabulary" data-nav="vocabulary">
+        <div class="container">
+          <div class="section-head"><div class="section-index">03</div><div><h2>标准词汇：把不同代码变成同一种临床语言</h2><p class="section-intro">词汇标准化不是简单换码，而是同时确定临床含义、所属领域、概念层级和可追溯的映射关系。药物领域主要以 RxNorm / RxNorm Extension 的标准概念表达。</p></div></div>
+          <div class="concept-grid">
+            <article class="concept-card"><span class="tag">STANDARD</span><h3>标准概念</h3><p>用于 CDM 的 <code>*_CONCEPT_ID</code> 字段，代表分析中的统一临床含义。</p></article>
+            <article class="concept-card"><span class="tag">SOURCE</span><h3>源概念</h3><p>来自本地编码体系，通过“Maps to”关系映射到标准概念，并保存在源字段中。</p></article>
+            <article class="concept-card"><span class="tag">DOMAIN</span><h3>领域</h3><p>决定事件进入 Drug、Condition、Procedure、Measurement 等哪个临床表。</p></article>
+            <article class="concept-card"><span class="tag">HIERARCHY</span><h3>层级</h3><p>利用 CONCEPT_ANCESTOR 纳入后代概念；药物可从 Ingredient 下钻到具体临床药品。</p></article>
+          </div>
+          <div class="mapping-flow" aria-label="药物代码标准化过程"><div class="mapping-box"><strong>本地药品代码</strong><small>NDC、院内码、收费码等</small></div><div class="mapping-arrow">→</div><div class="mapping-box"><strong>Maps to</strong><small>保留源值，记录映射关系</small></div><div class="mapping-arrow">→</div><div class="mapping-box"><strong>RxNorm 标准概念</strong><small>Ingredient / Clinical Drug / Branded Drug</small></div></div>
+          <figure class="official-figure">
+            <a href="assets/ohdsi-official/vocabulary-hierarchy.png" target="_blank" aria-label="打开 OHDSI 标准词汇层级官方图原图"><img src="assets/ohdsi-official/vocabulary-hierarchy.png" alt="OHDSI 标准词汇层级示意图，展示源代码、源概念、标准概念与分类概念之间的映射和层级关系" width="5353" height="2857" loading="lazy"></a>
+            <figcaption><span class="figure-label">OFFICIAL FIGURE</span><strong>源概念、标准概念与分类概念的关系</strong>图中用疾病词汇举例，但药物研究遵循同一语义框架：本地药品代码映射到 RxNorm/RxNorm Extension 标准概念，ATC 等分类概念用于分组和导航。分类概念不应直接替代事实表中的标准药物概念。<a href="https://ohdsi.github.io/TheBookOfOhdsi/StandardizedVocabularies.html" target="_blank" rel="noreferrer">来源：The Book of OHDSI，Standardized Vocabularies ↗</a></figcaption>
+          </figure>
+          <p class="matrix-note"><strong>药物分析要点：</strong>概念集应说明所选层级、是否包含后代、排除项和词汇版本；映射到更宽泛概念时可能损失信息，应纳入数据质量评估。</p>
+        </div>
+      </section>
+
+      <section class="section orange-tint" id="etl" data-nav="etl">
+        <div class="container">
+          <div class="section-head"><div class="section-index">04</div><div><h2>ETL 与数据质量：先证明数据可用</h2><p class="section-intro">ETL 不只是搬运数据，而是把源系统语义转成可审计的 CDM 记录。设计、映射、实现和质量控制应形成闭环，并可随数据与词汇版本重复运行。</p></div></div>
+          <div class="etl-grid">
+            <article class="etl-step"><h3>设计</h3><p>White Rabbit 扫描表、字段和值分布；Rabbit-in-a-Hat 记录表到表、字段到字段和转换逻辑。</p></article>
+            <article class="etl-step"><h3>代码映射</h3><p>由具备医学知识的人员使用 Usagi 等工具，将源代码审阅并映射到标准概念。</p></article>
+            <article class="etl-step"><h3>实现</h3><p>用可自动化的 SQL 或程序完成抽取、转换和加载，同时处理日期、单位、重复记录和主键。</p></article>
+            <article class="etl-step"><h3>质量控制</h3><p>检查完整性、一致性、合理性与源到目标的数量变化，并记录可重现的测试与版本。</p></article>
+          </div>
+          <div class="principle-strip" style="margin-top:42px"><div class="principle"><strong>可追溯</strong><p>保留源值、源概念和转换文档，能够解释每一条记录的来路。</p></div><div class="principle"><strong>可重复</strong><p>数据刷新时重新执行同一流程，而非手工修补结果。</p></div><div class="principle"><strong>可维护</strong><p>源系统、CDM 或词汇版本变化时，更新代码、文档和质量测试。</p></div></div>
+        </div>
+      </section>
+
+      <section class="section" id="cohorts" data-nav="cohorts">
+        <div class="container">
+          <div class="section-head"><div class="section-index">06</div><div><h2>队列与时间轴：把临床问题写成可执行逻辑</h2><p class="section-intro">OHDSI 队列是“在一段时间内满足一个或多个条件的人群”。代码列表只是原料；完整队列还必须说明进入事件、纳排规则、索引日、持续期与退出方式。</p></div></div>
+          <div class="cohort-builder">
+            <article class="cohort-part"><h3>进入事件</h3><p>定义索引日 t0，例如首次 ACEI 暴露；指定领域、概念集、观察期和事件属性。</p></article>
+            <article class="cohort-part"><h3>纳入规则</h3><p>把适应证、既往观察、洗脱期、单药治疗等规则写成相对 t0 的时间条件，并查看逐条 attrition。</p></article>
+            <article class="cohort-part"><h3>退出规则</h3><p>可设为观察期结束、固定随访、持续暴露结束或其他删失事件；允许间隔会影响药物暴露 era。</p></article>
+          </div>
+          <div class="foundation-grid" style="margin-top:44px">
+            <div><h3>概念集是可复用组件</h3><p class="section-intro" style="font-size:16px">通过 Include / Exclude、Descendants 和 Mapped 组合临床含义。同一结局队列可独立复用于效果、安全性和预测研究。</p></div>
+            <div class="timeline" aria-label="药物队列时间逻辑"><div class="time-block">基线与洗脱<small>确认新使用者及协变量</small></div><div class="time-block index">索引日 t0<small>首次符合条件的用药</small></div><div class="time-block risk">队列持续期<small>退出、删失和风险窗口</small></div></div>
+          </div>
+          <figure class="official-figure">
+            <a href="assets/ohdsi-official/atlas-cohort-definition.png" target="_blank" aria-label="打开 ATLAS 队列定义官方截图原图"><img src="assets/ohdsi-official/atlas-cohort-definition.png" alt="ATLAS 新建队列定义官方界面截图，包含队列进入事件、连续观察期、初始事件限制、纳入规则和事件限制" width="1283" height="734" loading="lazy"></a>
+            <figcaption><span class="figure-label">OFFICIAL SCREENSHOT</span><strong>ATLAS Cohort Definition：把队列逻辑配置成可执行规则</strong>界面从上到下对应“进入事件—观察期—初始事件选择—纳入规则”。实际研究还需继续设置退出策略、生成队列并查看 Reporting/Diagnostics。截图来自教材版本，按钮样式可能随 ATLAS 版本变化，但逻辑结构保持一致。<a href="https://ohdsi.github.io/TheBookOfOhdsi/Cohorts.html" target="_blank" rel="noreferrer">来源：The Book of OHDSI，Defining Cohorts ↗</a></figcaption>
+          </figure>
+          <p class="matrix-note"><strong>验证原则：</strong>宽松规则提高敏感度，严格规则提高阳性预测值。应依据研究问题取舍，并用 CohortDiagnostics、病历复核或外部金标准评估表型。</p>
+        </div>
+      </section>
+
+      <section class="section alt" id="characterization" data-nav="characterization">
+        <div class="container">
+          <div class="section-head"><div class="section-index">07</div><div><h2>表征与可行性：先理解人群，再进入推断</h2><p class="section-intro">队列表征以索引日为锚点，描述基线和索引后特征。先确认样本量、事件数、可观察时间和组间差异能否支持研究；表征本身不等于因果推断。</p></div></div>
+          <div class="character-grid">
+            <article class="character-card"><h3>基线与索引后特征</h3><p>汇总人口学、疾病、既往用药、操作、检验和医疗利用；支持多个时间窗、亚组和队列比较。</p><div class="metric-line"><span>FeatureExtraction</span><span>ATLAS Characterization</span></div></article>
+            <article class="character-card"><h3>治疗路径</h3><p>在索引后窗口描述治疗顺序、联合用药、换药和治疗组合，展示真实世界实践的异质性。</p><div class="metric-line"><span>Cohort Pathways</span><span>TreatmentPatterns</span></div></article>
+            <article class="character-card"><h3>发生率</h3><p>在目标队列的风险时间内识别新结局，同时报告病例数、发生比例、人时和发生率，并可分层。</p><div class="metric-line"><span>CohortIncidence</span><span>Incidence Rate</span><span>Person-time</span></div></article>
+          </div>
+          <div class="principle-strip" style="margin-top:42px"><div class="principle"><strong>人群级输出</strong><p>计数、比例、均值、中位数和标准差，用于描述与比较。</p></div><div class="principle"><strong>个体级特征</strong><p>FeatureExtraction 也可生成患者级协变量，供估计和预测模型使用。</p></div><div class="principle"><strong>分析边界</strong><p>表征发现差异；因果结论还需要对照设计、混杂控制和诊断。</p></div></div>
+        </div>
+      </section>
+
+      <section class="section" id="concepts" data-nav="concepts">
+        <div class="container">
+          <div class="section-head"><div class="section-index">18</div><div><h2>术语手册：遇到概念时按需查阅</h2><p class="section-intro">54 个术语按研究环节分成 6 组。本章是参考附录，不要求顺序通读；建议先完成前面的主线，再回到这里核对定义、常见误区和方法边界。</p></div></div>
+
+          <div class="glossary-toolbar"><p>选择一个主题查看概念释义、常见误区和方法边界。</p><div class="glossary-stats"><span>6 个主题</span><span>54 个概念</span><span>单组展开</span></div></div>
+
+          <details class="glossary-group">
+            <summary class="glossary-title"><span>A</span><h3>药物记录与暴露语义</h3></summary>
+            <div class="term-grid">
+              <article class="term"><h4>DRUG_EXPOSURE <small>药物暴露记录</small></h4><p>记录药物进入人体的事实或意图，可来自医嘱、处方、药房发药、院内给药、疫苗接种或患者自报。它是一次记录，不一定等于患者真正服用了药物。</p><div class="pitfall">常见误区：把“开具处方”“完成发药”和“实际服药”当成同一件事。</div></article>
+              <article class="term"><h4>暴露开始与结束 <small>START / END DATE</small></h4><p>开始日期通常来自医嘱、发药或给药日期；结束日期可能是已知值，也可能由开始日期和 DAYS_SUPPLY 推算。日期语义必须按数据源解释。</p><div class="pitfall">常见误区：把推算的结束日期当成精确停药日期。</div></article>
+              <article class="term"><h4>DAYS_SUPPLY 与 QUANTITY <small>天数与数量</small></h4><p>DAYS_SUPPLY 表示该次记录可覆盖的天数；QUANTITY 是发放或处方中的数量。两者结合剂量、频次和规格，才能更接近真实暴露。</p><div class="pitfall">常见误区：直接用 QUANTITY 代表治疗天数，忽略每次剂量和每日频次。</div></article>
+              <article class="term"><h4>DRUG_TYPE_CONCEPT_ID <small>记录来源类型</small></h4><p>描述这条药物记录如何被捕获，例如处方、发药、住院给药或患者报告。它反映数据来源与可信度，不表示药物类别。</p><div class="pitfall">常见误区：把 Type Concept 当作药理分类。</div></article>
+              <article class="term"><h4>DRUG_ERA <small>药物暴露期</small></h4><p>把同一成分相邻或近邻的多条 DRUG_EXPOSURE 按持药逻辑合并为连续暴露时期。允许间隔称为 persistence window，研究方案应明确。</p><div class="pitfall">常见误区：把 ERA 当成原始记录；它是算法派生结果，会随间隔和结束日期规则变化。</div></article>
+              <article class="term"><h4>暴露误分类 <small>Exposure misclassification</small></h4><p>数据库记录的暴露与真实服药不一致，例如处方未领取、领取未服用、院外购药不可见。不同数据源的误分类机制不同。</p><div class="pitfall">应通过数据源说明、敏感性分析和替代暴露定义评估影响。</div></article>
+            </div>
+          </details>
+
+          <details class="glossary-group">
+            <summary class="glossary-title"><span>B</span><h3>标准词汇与药物层级</h3></summary>
+            <div class="term-grid">
+              <article class="term"><h4>Ingredient <small>成分</small></h4><p>药物层级的核心上位概念，例如 lisinopril。按成分建概念集适合比较或汇总同一活性成分的所有规格、剂型和品牌。</p><div class="pitfall">成分层级覆盖广，但可能混入研究不希望纳入的剂型或组合药。</div></article>
+              <article class="term"><h4>Clinical Drug <small>临床药品</small></h4><p>通常组合成分、剂量强度和剂型，例如“某成分 10 mg 口服片”。适合需要精确规格或剂型的研究。</p><div class="pitfall">定义过细会降低跨数据库可用性，也可能造成样本分散。</div></article>
+              <article class="term"><h4>Branded Drug <small>品牌药</small></h4><p>在临床药品语义上再包含品牌信息。品牌比较需要确认各国家和数据库是否完整记录商品名。</p><div class="pitfall">品牌缺失或被映射到非品牌概念时，品牌层面的比较会产生选择性缺失。</div></article>
+              <article class="term"><h4>Standard / Source Concept <small>标准与源概念</small></h4><p>标准概念用于分析字段；源概念保留本地代码。通过 Maps to 建立二者关系，既实现互操作，也保留追溯能力。</p><div class="pitfall">CONCEPT_ID = 0 通常表示未映射或没有对应概念，不能悄悄忽略。</div></article>
+              <article class="term"><h4>Concept Set <small>概念集</small></h4><p>不是静态代码清单，而是可执行表达式：选定概念后，可包含后代、排除指定分支，并解析映射到的源代码。</p><div class="pitfall">必须保存表达式、解析后的概念列表和词汇版本，才能真正复现。</div></article>
+              <article class="term"><h4>ATC 与 RxNorm <small>分类与临床药物表示</small></h4><p>RxNorm / RxNorm Extension 主要承担药物标准概念；ATC 更适合药理或治疗分类查询。二者用途不同，不应把 ATC 分类概念直接当作暴露记录。</p><div class="pitfall">药物类别研究通常用分类概念找到成员，再解析为可记录的标准药物概念。</div></article>
+            </div>
+          </details>
+
+          <details class="glossary-group">
+            <summary class="glossary-title"><span>C</span><h3>队列、人群与时间</h3></summary>
+            <div class="term-grid">
+              <article class="term"><h4>Observation Period <small>可观察期</small></h4><p>表示数据库认为能够观察到该患者医疗事件的时间区间。研究的基线和随访一般不能超出可观察期。</p><div class="pitfall">“没有记录”只有在可观察期内才较可能表示“未观察到事件”。</div></article>
+              <article class="term"><h4>Target Cohort <small>目标队列</small></h4><p>研究关注的人群或暴露组，例如 ACEI 新使用者。在效果估计中，它代表目标治疗；在预测中，它代表进行预测的人群。</p></article>
+              <article class="term"><h4>Comparator Cohort <small>对照队列</small></h4><p>比较效果研究中的替代治疗组。理想主动对照应具有相同适应证、相近治疗阶段和类似进入医疗系统的机会。</p><div class="pitfall">“未用药者”往往与用药者差异太大，不一定是好对照。</div></article>
+              <article class="term"><h4>Outcome Cohort <small>结局队列</small></h4><p>独立定义结局事件，例如血管性水肿或心肌梗死。分析时再与目标队列和风险窗相交，因此同一结局表型可以复用。</p></article>
+              <article class="term"><h4>Index Date / t0 <small>索引日</small></h4><p>队列进入日期，也是基线、风险窗和随访的共同时间锚点。药物研究中常设为首次符合条件的治疗起始日。</p><div class="pitfall">两组 t0 定义不一致会造成时间零点偏倚。</div></article>
+              <article class="term"><h4>Baseline Window <small>基线窗口</small></h4><p>索引日前用于观察适应证、合并症、既往用药和医疗利用的时间。它为表征、混杂控制和预测特征提供信息。</p></article>
+              <article class="term"><h4>Washout / New User <small>洗脱期与新使用者</small></h4><p>在索引日前规定时间内未观察到目标药或药物类别暴露，称为满足洗脱；据此构建新使用者队列。</p><div class="pitfall">数据库中的“首次”只是观察期内首次，不保证患者一生首次用药。</div></article>
+              <article class="term"><h4>Prevalent User <small>现患使用者</small></h4><p>研究开始时已在用药的人。适合描述长期用药人群，但用于因果比较时可能遗漏早期不良事件和早期停药者。</p></article>
+              <article class="term"><h4>Time at Risk, TAR <small>风险时间</small></h4><p>规定在哪段时间内把结局归因于研究暴露或用于风险预测，可相对队列开始/结束设置起止偏移。</p><div class="pitfall">TAR 不是队列持续期的同义词；同一队列可以配置多个风险窗。</div></article>
+              <article class="term"><h4>Censoring <small>删失</small></h4><p>患者在结局发生前因观察期结束、换药、停药、死亡或研究结束而停止贡献风险时间。删失规则属于研究设计的一部分。</p></article>
+              <article class="term"><h4>As-treated / ITT-like <small>按治疗与固定随访</small></h4><p>As-treated 通常随暴露结束而结束随访；ITT-like 使用固定随访，即使患者停药也继续观察。两者回答不同问题。</p><div class="pitfall">观察性数据中的“ITT-like”只是类似随机试验策略，不具有随机化本身。</div></article>
+              <article class="term"><h4>Attrition <small>队列损耗</small></h4><p>逐条纳入规则后被排除的人数和比例。它帮助发现某个规则是否过严、逻辑是否错误，以及跨库可迁移性问题。</p></article>
+            </div>
+          </details>
+
+          <details class="glossary-group">
+            <summary class="glossary-title"><span>D</span><h3>描述性指标与效果估计</h3></summary>
+            <div class="term-grid">
+              <article class="term"><h4>Prevalence <small>患病率 / 使用率</small></h4><p>某一时间点或期间内已有事件或用药的人群比例，描述“有多少人处于该状态”，不要求事件是新发生。</p></article>
+              <article class="term"><h4>Incidence Proportion <small>累积发生比例</small></h4><p>在规定风险期内发生新结局的人数除以进入风险集的人数，回答“一段时间内有多大比例发生”。</p><span class="equation">新病例人数 ÷ 风险人群人数</span></article>
+              <article class="term"><h4>Incidence Rate <small>发生率密度</small></h4><p>新结局数除以所有人的累计风险人时，适合随访长度不同的情况。</p><span class="equation">新病例数 ÷ 累计 person-time</span></article>
+              <article class="term"><h4>Estimand <small>目标估计量</small></h4><p>研究真正要估计的对象，由目标人群、治疗策略、对照、结局、风险窗和效应尺度共同定义。先写 estimand，再选模型。</p></article>
+              <article class="term"><h4>Counterfactual <small>反事实</small></h4><p>同一患者如果接受另一种治疗，本会发生什么。患者只能呈现一个事实世界，因此研究设计用可比人群近似不可观察的反事实。</p></article>
+              <article class="term"><h4>Confounder <small>混杂因素</small></h4><p>同时影响治疗选择和结局的因素，例如年龄、疾病严重度或既往治疗。若不控制，会把人群差异误认为药物效应。</p></article>
+              <article class="term"><h4>Propensity Score, PS <small>倾向评分</small></h4><p>根据治疗前可观察特征，估计患者接受目标药而非对照药的概率。OHDSI 常使用大量通用基线协变量和正则化回归。</p><div class="pitfall">PS 只能控制已测量且正确记录的混杂，不能证明不存在未测量混杂。</div></article>
+              <article class="term"><h4>匹配、分层与加权 <small>PS adjustment</small></h4><p>匹配寻找 PS 相近的两组患者；分层在 PS 区间内比较；IPTW 用治疗概率的倒数赋权。不同方法对应不同目标人群和方差。</p></article>
+              <article class="term"><h4>Overlap / Equipoise <small>重叠与经验均衡</small></h4><p>两组患者是否都存在接受任一治疗的现实可能。若 PS 分布几乎不重叠，数据缺乏可比患者，模型无法可靠补救。</p></article>
+              <article class="term"><h4>Covariate Balance <small>协变量平衡</small></h4><p>调整后检查两组基线特征的标准化差异。平衡改善说明已测量特征更可比，但不等于研究已无偏。</p></article>
+              <article class="term"><h4>HR / RR / IRR / RD <small>效应尺度</small></h4><p>HR 比较瞬时风险，RR 比较累计风险，IRR 比较人时发生率，RD 比较绝对风险差。效应尺度必须与模型和 TAR 匹配。</p></article>
+              <article class="term"><h4>Large-scale Analytics <small>大规模分析</small></h4><p>系统地组合多个药物、对照、结局和分析参数，而非只运行一个模型；复用中间计算并统一输出诊断。</p></article>
+            </div>
+          </details>
+
+          <details class="glossary-group">
+            <summary class="glossary-title"><span>E</span><h3>药物安全性与系统误差</h3></summary>
+            <div class="term-grid">
+              <article class="term"><h4>Self-Controlled Design <small>自我对照设计</small></h4><p>同一患者在不同时间段进行比较，天然控制性别、遗传等不随时间改变的个体差异，但仍受年龄、季节、疾病进程等时间变化因素影响。</p></article>
+              <article class="term"><h4>SCCS <small>自我对照病例系列</small></h4><p>只纳入发生过结局的病例，比较暴露风险期与所有非暴露观察期的事件率，通常采用以个体为条件的 Poisson 模型。</p><div class="pitfall">需检查结局是否影响后续暴露或观察期结束。</div></article>
+              <article class="term"><h4>Self-Controlled Cohort <small>自我对照队列</small></h4><p>比较同一患者暴露后的结局率与暴露前控制期的结局率。结构直观，但时间趋势和接近用药前的症状可能产生偏倚。</p></article>
+              <article class="term"><h4>Case-Crossover <small>病例交叉</small></h4><p>对发生结局的病例，比较结局附近危险期与较早控制期的暴露频率。适合短暂暴露与急性结局。</p></article>
+              <article class="term"><h4>Negative Control <small>负对照</small></h4><p>选择理论上不应受目标药或对照药影响的结局，真实效应预期为 1。观察到的偏离用于刻画研究中的残余系统误差。</p><div class="pitfall">负对照不是“无关疾病随便选”，其队列定义和可观测性仍需可靠。</div></article>
+              <article class="term"><h4>Empirical Calibration <small>经验校准</small></h4><p>根据一组负对照估计系统误差分布，再校准 P 值和置信区间，使统计不确定性同时反映随机误差和可观测的系统误差。</p></article>
+              <article class="term"><h4>Signal Detection / Evaluation <small>信号检测与评价</small></h4><p>信号检测在大量药物—结局组合中寻找异常；信号评价针对具体假设采用更严格设计。检测到关联不等于确认因果。</p></article>
+              <article class="term"><h4>Sensitivity Analysis <small>敏感性分析</small></h4><p>改变洗脱期、暴露间隔、风险窗、结局定义或调整策略，检查结论是否依赖单一参数选择。</p></article>
+            </div>
+          </details>
+
+          <details class="glossary-group">
+            <summary class="glossary-title"><span>F</span><h3>患者级预测与工具生态</h3></summary>
+            <div class="term-grid">
+              <article class="term"><h4>Target–Outcome–TAR <small>预测三要素</small></h4><p>Target 指在哪类患者、哪个时点做预测；Outcome 指预测事件；TAR 指未来多长时间内观察结局。三者共同定义预测任务。</p></article>
+              <article class="term"><h4>Feature <small>预测特征</small></h4><p>索引日前可获得的人口学、疾病、药物、操作、检验和利用信息。必须确保特征在预测时点真实可用，避免信息泄漏。</p></article>
+              <article class="term"><h4>Discrimination <small>区分度</small></h4><p>模型将高风险患者排在低风险患者前面的能力，常用 AUROC 或 AUPRC。区分度高不代表预测概率准确。</p></article>
+              <article class="term"><h4>Calibration <small>校准度</small></h4><p>预测概率与实际发生比例是否一致。例如预测风险约 10% 的患者中，是否约有 10% 发生结局。</p></article>
+              <article class="term"><h4>Internal / External Validation <small>内部与外部验证</small></h4><p>内部验证评估同一数据来源中的泛化；外部验证在其他数据库、机构、地区或时间段测试迁移能力。</p></article>
+              <article class="term"><h4>Data Leakage / Drift <small>信息泄漏与漂移</small></h4><p>泄漏是模型使用了预测时点之后的信息；漂移是人群、记录方式或临床实践随时间变化。二者都可能造成部署性能下降。</p></article>
+              <article class="term"><h4>ATLAS / WebAPI <small>设计与交互执行</small></h4><p>ATLAS 用图形界面创建概念集、队列、表征、估计和预测设计；WebAPI 负责与数据源和后台任务交互。</p></article>
+              <article class="term"><h4>HADES <small>标准分析软件包</small></h4><p>OHDSI 的 R 包体系，包含数据连接、特征提取、效果估计、安全性、预测、诊断和证据综合等能力。</p></article>
+              <article class="term"><h4>Strategus <small>研究编排</small></h4><p>把队列和多个分析模块封装为统一研究规范，在不同数据库本地执行并生成结构一致的结果。</p></article>
+              <article class="term"><h4>DQD / CohortDiagnostics <small>数据与队列诊断</small></h4><p>DataQualityDashboard 检查 CDM 数据质量；CohortDiagnostics 检查表型的数量、损耗、代码构成、重叠和跨库差异。</p></article>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section class="section alt" id="worked-study" data-nav="worked-study">
+        <div class="container">
+          <div class="section-head"><div class="section-index">15</div><div><h2>完整实操：在 OHDSI 中完成一次药品比较研究</h2><p class="section-intro">以官方教材中的问题为贯穿示例：比较高血压一线单药治疗中，ACEI 新使用者与噻嗪类利尿剂新使用者发生血管性水肿的风险。下面把前述概念、平台操作、责任角色、输出和质量门逐阶段对应起来。</p></div></div>
+
+          <div class="study-brief">
+            <div><h3>研究问题</h3><p>在既往连续可观察至少 365 天、具有高血压诊断、此前未使用相关降压药的患者中，启动 ACEI 与启动噻嗪类利尿剂相比，治疗期间血管性水肿风险是否不同？</p></div>
+            <div class="brief-facts"><div class="brief-fact"><b>Target：</b>ACEI 新使用者</div><div class="brief-fact"><b>Comparator：</b>噻嗪类新使用者</div><div class="brief-fact"><b>Outcome：</b>血管性水肿</div><div class="brief-fact"><b>TAR：</b>索引日后 1 天至持续暴露结束</div><div class="brief-fact"><b>Model：</b>PS 调整 + Cox 模型</div></div>
+          </div>
+
+          <div class="stage-list">
+            <article class="stage-card"><div class="stage-no"></div><div><h3>明确问题与 estimand</h3><p>固定目标人群、目标药、主动对照、结局、风险窗、效应尺度和分析策略。这里的主要效应量可设为 HR。</p></div><div class="op-path"><b>平台操作</b>先在研究方案或 ATLAS 设计说明中写 PICO(T)：Population、Intervention、Comparator、Outcome、Time。ATLAS 不会替代临床决策。</div><div class="owner"><b>主要责任角色</b>临床专家 + 流行病学家；统计人员共同确认 estimand。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>形成不可歧义的研究问题；明确“比较的是谁、从何时开始、观察多久、估计什么”。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>确认数据源是否适用</h3><p>检查 PERSON、OBSERVATION_PERIOD、DRUG_EXPOSURE、CONDITION_OCCURRENCE、VISIT 等表的规模、时间覆盖和记录机制。</p></div><div class="op-path"><b>ATLAS 操作</b>进入 <strong>Data Sources</strong> 查看人口、观察期、药物和疾病的分布；结合 Achilles 报告。平台外运行 DataQualityDashboard 检查 CDM 规则。</div><div class="owner"><b>主要责任角色</b>数据工程师 + 数据管理员 + 研究者。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>确认数据能识别处方/发药、首次用药、高血压和血管性水肿；关键日期与观察期可靠。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>构建药物与结局概念集</h3><p>分别定义 ACEI、噻嗪类、高血压、血管性水肿及“所有其他降压药”。决定使用 Ingredient、分类概念还是具体 Clinical Drug。</p></div><div class="op-path"><b>ATLAS 操作</b><strong>Vocabulary Search</strong> 搜索标准概念并查看层级、关系和源代码；在 <strong>Concept Sets → New Concept Set</strong> 中配置 Include、Descendants、Exclude 和 Mapped。</div><div class="owner"><b>主要责任角色</b>临床专家 + 词汇映射专家；数据负责人核对本地源代码覆盖。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>保存概念集表达式、解析后的标准概念、源代码覆盖率和词汇版本；检查是否误纳组合药或错误剂型。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>创建 Target 与 Comparator 队列</h3><p>把“新使用者一线单药治疗”转成时间逻辑：首次暴露、365 天既往观察、高血压适应证、既往无降压药、启动后 7 天内仅一种药。</p></div><div class="op-path"><b>ATLAS 操作</b><strong>Cohort Definitions → New Cohort</strong>；Initial Event 选择 Drug Exposure；加入 first exposure 属性；在 Inclusion Criteria 中逐条添加观察期、诊断、零次既往暴露和单药规则。</div><div class="owner"><b>主要责任角色</b>流行病学家负责逻辑；临床专家确认治疗路径；ATLAS 分析人员实现。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>Target 与 Comparator 使用对称规则，仅药物概念不同；每条纳入标准都有清晰时间窗。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>设置队列退出与暴露持续期</h3><p>定义何时停止认为患者处于治疗状态，例如连续暴露结束，并允许相邻发药间存在 30 天 persistence gap。</p></div><div class="op-path"><b>ATLAS 操作</b>在 Cohort Definition 的 <strong>Cohort Exit</strong> 中选择持续药物暴露结束；配置 persistence window、观察期限制及必要的删失事件。</div><div class="owner"><b>主要责任角色</b>药物流行病学家 + 数据专家。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>退出策略与 DRUG_EXPOSURE 的结束日期语义相容；至少准备 0、30、60 天间隔作为敏感性分析。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>创建 Outcome 队列</h3><p>血管性水肿表型不仅包含疾病概念，还可要求住院或急诊就诊，并设置既往结局清洗期，以提高事件特异性。</p></div><div class="op-path"><b>ATLAS 操作</b>新建独立 Cohort Definition；Initial Event 选择 Condition Occurrence，附加就诊类型、首次事件或既往无事件条件；不要把 Target 逻辑写入 Outcome。</div><div class="owner"><b>主要责任角色</b>临床专家 + 表型专家。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>Outcome 可被其他药物研究复用；记录敏感型与特异型定义，并说明验证证据。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>生成队列并运行诊断</h3><p>在具体 CDM 上实例化队列，检查初始事件数、逐条 attrition、事件率、代码构成和跨数据库差异。</p></div><div class="op-path"><b>ATLAS / HADES 操作</b>在 Cohort Definition 中选择数据源并点击 <strong>Generate</strong>；查看 Inclusion Report。需要系统诊断时运行 <strong>CohortDiagnostics</strong> 并打开结果应用。</div><div class="owner"><b>主要责任角色</b>分析人员执行；临床、数据和流行病学人员共同复核。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>没有异常归零或断崖式损耗；Target 与 Comparator 有足够样本和结局事件；源代码分布符合临床预期。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>先做表征与发生率分析</h3><p>比较两组基线疾病、既往用药和医疗利用；查看未经调整的结局发生比例、发生率及人时。</p></div><div class="op-path"><b>ATLAS 操作</b><strong>Characterizations → New</strong> 选择两个队列与特征分析；在 <strong>Incidence Rates</strong> 中配置 Target、Outcome 和 TAR；必要时用 Cohort Pathways 查看后续换药。</div><div class="owner"><b>主要责任角色</b>流行病学家 + 分析人员；临床专家解释差异。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>确认指征、病情严重度和医疗利用差异；若几乎没有共同支持人群，应重新考虑主动对照或研究范围。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>配置比较效果分析</h3><p>将 Target、Comparator、Outcome、TAR、协变量、PS 调整方式和结局模型组合成完整估计设计。</p></div><div class="op-path"><b>ATLAS 操作</b><strong>Estimation → New</strong>。在 Comparisons 中 Add Comparison、Add Outcome、加入负对照和需排除的治疗概念；在 Analysis Settings 中配置 Study Population、Covariates、TAR、PS matching/stratification/weighting 与 Cox 模型。</div><div class="owner"><b>主要责任角色</b>方法学家 + 统计人员 + OHDSI 分析开发人员。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>两组使用相同 TAR；PS 特征只来自治疗前；显式排除目标药、对照药及直接暴露代理变量，避免信息泄漏。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>执行研究</h3><p>ATLAS 可生成研究代码；复杂、批量或多数据库研究通常通过 HADES 研究包或 Strategus 规范执行。</p></div><div class="op-path"><b>操作方式</b>ATLAS 中保存设计并导出 R study package；本地配置 DatabaseConnector 后运行。多模块研究用 <strong>Strategus</strong> 在各数据节点执行同一 analysis specification。</div><div class="owner"><b>主要责任角色</b>分析程序员 + 数据节点执行人员；项目负责人控制版本。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>锁定队列 JSON、分析参数、软件版本和运行日志；患者级数据留在本地，仅交换合规的汇总结果。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>先看诊断，再看效应值</h3><p>依次检查 PS 可分性与重叠、调整后协变量平衡、样本和事件损失、模型拟合、负对照分布，最后解释 HR 和置信区间。</p></div><div class="op-path"><b>结果查看</b>打开 ATLAS 结果或研究包生成的 Shiny 应用；查看 Preference Score、Covariate Balance、Power、Effect Estimate、Negative Controls 和 calibrated estimates。</div><div class="owner"><b>主要责任角色</b>统计人员 + 流行病学家主审；临床专家解释临床意义。</div><div class="gate"><strong>阶段输出 / 质量门：</strong>若缺乏重叠、调整后仍失衡、事件过少或负对照显示明显系统误差，不应只凭显著 P 值下结论。</div></article>
+
+            <article class="stage-card"><div class="stage-no"></div><div><h3>敏感性分析、跨库复现与报告</h3><p>改变暴露间隔、风险窗、洗脱期、PS 策略和结局定义；在多个 CDM 数据库执行相同规范并解释异质性。</p></div><div class="op-path"><b>平台操作</b>在 Estimation 中增加多个 Analysis Settings，或在 Strategus 中加入多个分析模块；使用 EvidenceSynthesis 汇总数据库级效应。导出研究规范、诊断和结果。</div><div class="owner"><b>主要责任角色</b>研究团队共同解释；项目负责人和数据伙伴审核发布内容。</div><div class="gate"><strong>最终交付：</strong>研究方案、概念集、队列定义、代码与版本、数据质量报告、诊断、主分析、敏感性分析及跨库结果完整配套。</div></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="ps-methods" data-nav="ps-methods">
+        <div class="container">
+          <div class="section-head"><div class="section-index">11</div><div><h2>比较效果进阶：在 ATLAS 中使用 PSM、IPTW</h2><p class="section-intro">PSM、PS 分层和 IPTW 都先估计治疗倾向，再用不同方式构造可比人群。它们是混杂调整策略，不是结局预测模型，也不能挽救缺乏共同支持的 Target 与 Comparator。</p></div></div>
+
+          <div class="principle-strip">
+            <div class="principle"><strong>倾向评分 PS</strong><p>患者根据治疗前信息接受 Target 而非 Comparator 的估计概率。</p></div>
+            <div class="principle"><strong>共同前提</strong><p>新使用者、主动对照、一致时间零点、充分基线信息和共同支持区域。</p></div>
+            <div class="principle"><strong>共同限制</strong><p>只能调整已测量混杂；不能替代合理的队列设计、负对照和敏感性分析。</p></div>
+          </div>
+
+          <div class="glossary-group">
+            <div class="glossary-title"><span>1</span><h3>两种方法共用的 ATLAS 前置配置</h3></div>
+            <div class="stage-list">
+              <article class="stage-card"><div class="stage-no"></div><div><h3>进入 Estimation</h3><p>目标、对照和结局队列应已生成并通过队列诊断。</p></div><div class="op-path"><b>菜单路径</b><strong>ATLAS → Estimation → New Estimation</strong>，填写研究名称并保存。</div><div class="owner"><b>不要在这里补救</b>若 Target 与 Comparator 的适应证或治疗阶段不同，应返回修改队列。</div><div class="gate"><strong>检查：</strong>两组采用对称定义，索引日语义一致。</div></article>
+              <article class="stage-card"><div class="stage-no"></div><div><h3>定义比较问题</h3><p>选择 Target、Comparator、Outcome，并指定负对照和需要从协变量中排除的治疗概念。</p></div><div class="op-path"><b>菜单路径</b><strong>Comparisons → Add Comparison</strong> → 选择 Target / Comparator → <strong>Add Outcome</strong>；添加 Negative Controls 与 Concepts to Exclude。</div><div class="owner"><b>关键处理</b>排除目标药、对照药及其直接代理，例如注射操作，避免 PS 模型“看到答案”。</div><div class="gate"><strong>检查：</strong>Outcome 独立于暴露队列定义，可复用于多个比较。</div></article>
+              <article class="stage-card"><div class="stage-no"></div><div><h3>建立分析设置</h3><p>Study Population 决定谁进入分析；Covariate Settings 决定 PS 使用哪些治疗前变量；TAR 决定何时计入结局。</p></div><div class="op-path"><b>菜单路径</b><strong>Analysis Settings → Add Analysis Settings</strong>，依次配置 Study Population、Covariate Settings、Time-at-Risk、Propensity Score Adjustment、Outcome Model。</div><div class="owner"><b>推荐起点</b>使用默认大规模基线协变量，包括人口学、疾病、药物、操作、检验和医疗利用。</div><div class="gate"><strong>检查：</strong>协变量来自 t0 之前或当日可用信息；不使用索引日之后的信息筛选患者。</div></article>
+            </div>
+          </div>
+
+          <div class="glossary-group">
+            <div class="glossary-title"><span>2</span><h3>分别配置 PSM 与 IPTW</h3></div>
+            <div class="ps-compare">
+              <article class="ps-method">
+                <h3>PSM｜倾向评分匹配</h3>
+                <p>为 Target 患者寻找 PS 相近的 Comparator 患者，形成匹配样本。估计结果主要适用于成功匹配、具有共同支持的人群。</p>
+                <ol class="config-list">
+                  <li>在 <b>Propensity Score Adjustment</b> 中启用 PS 模型与 <b>Matching</b>。</li>
+                  <li>选择匹配比例：<b>1:1</b> 易解释；较大的 maximum ratio 可形成 variable-ratio matching，保留更多对照。</li>
+                  <li>设置 <b>Caliper</b>。OHDSI 教材的常用默认是 logit PS 标准差尺度上的 0.2；应结合匹配率与平衡诊断调整。</li>
+                  <li>根据研究方案决定是否 replacement、是否剔除极端 PS；不同 ATLAS / CohortMethod 版本可见选项可能不同。</li>
+                  <li>在 <b>Outcome Model</b> 选择 Cox、Poisson 或 Logistic。variable-ratio matching 或 PS 分层通常需要对 strata / matched sets 条件化。</li>
+                </ol>
+                <div class="caution"><strong>代价：</strong>无法匹配的患者会被移除。匹配率很低通常提示两组缺少共同支持，而不只是 caliper 太严格。</div>
+              </article>
+
+              <article class="ps-method iptw">
+                <h3>IPTW｜逆概率治疗加权</h3>
+                <p>根据患者实际接受治疗的概率赋予权重，构造治疗组与对照组基线特征更接近的伪总体。概念上，罕见治疗选择对应更大的权重。</p>
+                <ol class="config-list">
+                  <li>仍在 <b>Propensity Score Adjustment</b> 中创建同样的 PS 模型，但不要同时执行 PSM。</li>
+                  <li>在 <b>Outcome Model Settings</b> 中启用 <b>Use inverse probability of treatment weighting</b>。</li>
+                  <li>先明确目标估计量：ATE 常用 Target = 1/PS、Comparator = 1/(1−PS)；ATT 常用 Target = 1、Comparator = PS/(1−PS)。ATLAS/CohortMethod 实际权重形式、稳定化和版本选项应写入方案。</li>
+                  <li>检查极端 PS 和极端权重。必要时预先规定 trimming / preference-score 限制，并把不同阈值作为敏感性分析。</li>
+                  <li>选择与结局和 TAR 匹配的 Outcome Model，并确认标准误计算支持加权分析。</li>
+                </ol>
+                <div class="caution"><strong>代价：</strong>IPTW 可保留更多患者，但少量极端权重可能主导结果，使方差增大并降低稳定性。</div>
+              </article>
+            </div>
+            <figure class="official-figure">
+              <a href="assets/ohdsi-official/atlas-ps-settings.png" target="_blank" aria-label="打开 ATLAS 倾向评分设置官方截图原图"><img src="assets/ohdsi-official/atlas-ps-settings.png" alt="ATLAS 倾向评分调整官方设置截图，包含截尾、匹配或分层、最大匹配比例、caliper、caliper 尺度和正则化选项" width="755" height="636" loading="lazy"></a>
+              <figcaption><span class="figure-label">OFFICIAL SCREENSHOT</span><strong>ATLAS Propensity Score Adjustment 设置示例</strong>截图展示 PSM 的核心入口：选择 matching/stratification、匹配比例、caliper 与 standardized logit 尺度，并配置 PS 模型。这里的数值是教材示例，不应脱离研究方案直接照抄；设置后必须检查匹配率、共同支持和协变量平衡。<a href="https://ohdsi.github.io/TheBookOfOhdsi/PopulationLevelEstimation.html" target="_blank" rel="noreferrer">来源：The Book of OHDSI，Population-Level Estimation ↗</a></figcaption>
+            </figure>
+          </div>
+
+          <div class="glossary-group">
+            <div class="glossary-title"><span>3</span><h3>PS 分层与结局模型调整</h3></div>
+            <div class="concept-grid">
+              <article class="concept-card"><span class="tag">STRATIFY</span><h3>PS 分层</h3><p>在 Propensity Score Adjustment 中选择 Stratification，指定 strata 数量以及按 Target、Comparator 或总体确定分位点。适合不想丢弃大量样本的场景。</p></article>
+              <article class="concept-card"><span class="tag">OUTCOME</span><h3>结局模型调整</h3><p>也可把基线协变量直接放入 Cox、Poisson 或 Logistic 模型；但结局事件通常远少于治疗人数，大规模协变量更容易造成不稳定。</p></article>
+              <article class="concept-card"><span class="tag">COMBINE</span><h3>双重调整</h3><p>PS 调整后再加入少量预设协变量可以提高稳健性，但应预先规定，避免看到结果后反复试模型。</p></article>
+              <article class="concept-card"><span class="tag">SEPARATE</span><h3>并行分析设置</h3><p>不要把 PSM 与 IPTW 同时塞进一个分析设置。为同一 Comparison 新建“PSM”“IPTW”“PS stratification”等多个 Analysis Settings，ATLAS 会运行所有组合。</p></article>
+            </div>
+          </div>
+
+          <div class="glossary-group">
+            <div class="glossary-title"><span>4</span><h3>运行与结果诊断：决定结果能否解释</h3></div>
+            <div class="diagnostic-grid">
+              <article class="diagnostic"><h4>PS / Preference Score</h4><p>先看两组分布是否重叠。PS 模型 AUC 很高往往说明治疗选择容易被预测、两组可比性较差，不代表模型“优秀”。</p></article>
+              <article class="diagnostic"><h4>Covariate Balance</h4><p>比较调整前后标准化均值差。常用经验规则是调整后所有 |SMD| 尽量小于 0.1。</p></article>
+              <article class="diagnostic"><h4>Attrition</h4><p>PSM 查看多少患者因无法匹配被移除；IPTW 查看因 trimming 被排除的人群及其特征。</p></article>
+              <article class="diagnostic"><h4>Weight Stability</h4><p>IPTW 重点检查权重分布、极端权重和有效样本量。若 ATLAS 结果页未充分展示，应在导出的 HADES 研究包中补充。</p></article>
+              <article class="diagnostic"><h4>Outcome / Power</h4><p>确认调整后仍有足够患者、结局事件和随访人时；匹配或截尾后功效可能明显下降。</p></article>
+              <article class="diagnostic"><h4>Negative Controls</h4><p>查看负对照效应是否围绕 1，使用经验校准后的 P 值和置信区间评估系统误差。</p></article>
+            </div>
+            <figure class="official-figure">
+              <a href="assets/ohdsi-official/covariate-balance.png" target="_blank" aria-label="打开 OHDSI 协变量平衡诊断官方图原图"><img src="assets/ohdsi-official/covariate-balance.png" alt="OHDSI 协变量平衡散点图，横轴是匹配前标准化均值差，纵轴是匹配后标准化均值差" width="1600" height="1600" loading="lazy"></a>
+              <figcaption><span class="figure-label">OFFICIAL DIAGNOSTIC</span><strong>调整前后协变量平衡：效应值之前必须看的图</strong>每个点代表一个基线协变量。横轴显示调整前标准化均值差，纵轴显示匹配后差异；点越靠近横轴，说明调整后的不平衡越小。示例中 50,257 个协变量匹配后的最大绝对差异为 0.05，但这仍不能证明未测量混杂已消失。<a href="https://ohdsi.github.io/TheBookOfOhdsi/PopulationLevelEstimation.html" target="_blank" rel="noreferrer">来源：The Book of OHDSI，Population-Level Estimation ↗</a></figcaption>
+            </figure>
+            <div class="op-path" style="margin-top:24px"><b>执行入口</b>完成 Analysis Settings 和 Evaluation Settings 后，进入 <strong>Utilities</strong> 检查将运行的 Comparison × Analysis Setting 组合，保存并生成 R study package；在本地运行后，通过结果文件或 Shiny 应用查看全部诊断。</div>
+          </div>
+
+          <div class="glossary-group">
+            <div class="glossary-title"><span>5</span><h3>PSM 与 IPTW 怎么选</h3></div>
+            <div class="choice-table"><table><thead><tr><th>判断维度</th><th>PSM</th><th>IPTW</th><th>操作建议</th></tr></thead><tbody>
+              <tr><td>目标人群</td><td>成功匹配、处于共同支持区域的人群</td><td>由 ATE、ATT 等权重定义决定</td><td>在方案中明确 estimand，不只写“用了 PS”</td></tr>
+              <tr><td>样本处理</td><td>删除无法匹配者</td><td>通常保留更多患者，但可能截尾极端值</td><td>同时报告原始和调整后的样本量</td></tr>
+              <tr><td>主要风险</td><td>匹配率低、结果外推范围缩小</td><td>极端权重、方差膨胀、positivity 违背</td><td>先看重叠，再决定方法</td></tr>
+              <tr><td>结果稳定性</td><td>常较直观，匹配后人群容易解释</td><td>对 PS 模型和截尾规则更敏感</td><td>预设 PSM 与 IPTW 为主分析和敏感性分析</td></tr>
+              <tr><td>必须报告</td><td>匹配比例、caliper、匹配率、平衡</td><td>权重形式、稳定化、截尾、权重分布、有效样本量</td><td>两者都报告负对照与经验校准</td></tr>
+            </tbody></table></div>
+          </div>
+
+          <p class="matrix-note"><strong>最重要的判断：</strong>如果调整后仍缺乏协变量平衡或共同支持，应重新设计 Target / Comparator，而不是继续修改模型直到出现显著结果。ATLAS 菜单名称会随版本略有变化，但 Comparisons → Analysis Settings → Evaluation Settings 的逻辑保持一致。</p>
+        </div>
+      </section>
+
+      <section class="section orange-tint" id="utilization" data-nav="utilization">
+        <div class="container">
+          <div class="section-head"><div class="section-index">09</div><div><h2>药物利用：先描述真实世界如何用药</h2><p class="section-intro">这是最适合入门的分析类型：回答谁在用、何时开始、持续多久以及如何换药。它描述治疗行为与事件分布，不直接估计药物因果效应。</p></div></div>
+          <div class="pathway" aria-label="药物治疗路径"><div class="path-node"><strong>首次用药</strong><span>新使用者数量<br>起始时间分布</span></div><div class="path-node"><strong>持续与停药</strong><span>暴露时长<br>持药与中断</span></div><div class="path-node"><strong>换药与加药</strong><span>治疗序列<br>联合方案</span></div><div class="path-node"><strong>再启动</strong><span>间隔后重启<br>多疗程模式</span></div><div class="path-node"><strong>结局描述</strong><span>发生率<br>资源使用</span></div></div>
+          <div class="tool-grid"><div class="tool-item"><h3>Characterization</h3><p>描述和比较用药队列的人口学特征、疾病史、既往用药和医疗利用。</p></div><div class="tool-item"><h3>CohortIncidence</h3><p>计算事件发生率与发生比例，并按年龄、性别或时间进行分层。</p></div><div class="tool-item"><h3>TreatmentPatterns</h3><p>分析治疗序列、治疗组合和路径转移。</p></div><div class="tool-item"><h3>ATLAS</h3><p>通过 Cohort Pathways、Characterizations 和 Incidence Rates 进行交互探索。</p></div></div>
+        </div>
+      </section>
+
+      <section class="section alt" id="effect" data-nav="effect">
+        <div class="container">
+          <div class="section-head"><div class="section-index">10</div><div><h2>比较效果：从可比治疗起始者估计相对效应</h2><p class="section-intro">典型设计是新使用者、主动对照队列：先通过设计让两组尽量可比，再用 CohortMethod 的倾向评分或结局模型调整已测量混杂。</p></div></div>
+          <div class="comparison-lanes">
+            <div class="lane-label">目标药 A<br>新使用者</div><div class="lane"><span>共同适应证</span><span>基线协变量</span><span>风险窗口</span><span>结局</span></div>
+            <div class="lane-label comparator">对照药 B<br>新使用者</div><div class="lane"><span>相同治疗阶段</span><span>倾向评分调整</span><span>相同时间零点</span><span>结局</span></div>
+          </div>
+          <div class="decision-grid"><div class="decision"><h3>主动对照</h3><p>优先选择共享适应证与治疗阶段的比较药，减少指征混杂。</p></div><div class="decision"><h3>时间零点</h3><p>两组使用一致的索引规则，避免不朽时间偏倚和入组错位。</p></div><div class="decision"><h3>人群重叠</h3><p>检查倾向评分分布与加权后的协变量平衡，避免外推。</p></div><div class="decision"><h3>经验校准</h3><p>使用负对照估计系统误差，并校准 P 值和置信区间。</p></div></div>
+          <details><summary>常见输出</summary><p>效应量通常包括风险比、发生率比或风险差，同时报告事件数、随访时间、倾向评分诊断、协变量平衡和负对照分布。</p></details>
+        </div>
+      </section>
+
+      <section class="section" id="safety" data-nav="safety">
+        <div class="container">
+          <div class="section-head"><div class="section-index">12</div><div><h2>药物安全性：按风险机制选择设计</h2><p class="section-intro">安全性研究既可使用主动对照队列，也可使用自我对照设计。对短暂暴露与急性结局，自我对照方法常有优势；它能控制不随时间变化的个体差异，但仍需处理年龄、季节和疾病进程等时间变化混杂。</p></div></div>
+          <div class="safety-grid">
+            <article class="safety-panel"><h3>Self-Controlled Case Series</h3><p>只纳入发生结局的病例，比较暴露相关风险期与其他观察期的事件发生率。</p><div class="mini-time"><span>基线观察</span><span>暴露</span><span>风险期与结局</span></div><div class="caution"><strong>需要处理：</strong>年龄、季节性、时间趋势，以及结局是否改变后续暴露或观察。</div></article>
+            <article class="safety-panel"><h3>Self-Controlled Cohort</h3><p>比较暴露前和暴露后的结局发生。暴露前的时间区间作为个体自身的对照。</p><div class="mini-time"><span>暴露前对照期</span><span>暴露</span><span>暴露后风险期</span></div><div class="caution"><strong>需要处理：</strong>疾病自然进程、治疗指征随时间变化，以及暴露日期或结局日期误差。</div></article>
+          </div>
+          <p class="matrix-note"><strong>选择提示：</strong>若存在合理的替代治疗，优先考虑新使用者主动对照队列；若结局急性、暴露时点清楚且个体固定特征是主要混杂来源，可考虑 SCCS。信号检测用于发现异常关联，信号评价才用于检验具体假设。</p>
+        </div>
+      </section>
+
+      <section class="section alt" id="prediction" data-nav="prediction">
+        <div class="container">
+          <div class="section-head"><div class="section-index">13</div><div><h2>个体风险预测：治疗后谁更可能发生结局</h2><p class="section-intro">PatientLevelPrediction 统一定义目标队列 T、结局 O、时间零点 t0 和风险预测窗口 TAR。它预测患者未来风险，不估计把治疗 A 换成 B 会造成什么效果。</p></div></div>
+          <div class="prediction-figure" aria-label="患者级预测时间框架"><div class="prediction-block">历史窗口<small>诊断、药物、检查和操作等特征</small></div><div class="prediction-block">t0<small>目标队列 T</small></div><div class="prediction-block">TAR 风险窗口<small>预测结局 O 是否发生</small></div></div>
+          <div class="prediction-steps"><div class="prediction-step"><h3>候选算法</h3><p>正则化回归、树模型、深度学习或用户自定义算法。</p></div><div class="prediction-step"><h3>内部验证</h3><p>评估区分度、校准度、阈值表现与过拟合。</p></div><div class="prediction-step"><h3>外部验证</h3><p>在其他数据库、机构或时间段评估迁移能力。</p></div><div class="prediction-step"><h3>临床应用</h3><p>预先定义预测时点、行动阈值、干预方式和净获益。</p></div></div>
+          <p class="matrix-note"><strong>边界：</strong>预测模型回答个体风险。它不自动回答“某种药物是否导致结局”，因果效应需要单独的研究设计。</p>
+        </div>
+      </section>
+
+      <section class="section" id="quality" data-nav="quality">
+        <div class="container">
+          <div class="section-head"><div class="section-index">16</div><div><h2>诊断与证据质量：先判断能否解释，再看结果</h2><p class="section-intro">OHDSI 把诊断结果视为主要研究产出。数据质量、队列表型、可比性、系统误差和跨库一致性构成一条证据链；仅报告效应值或模型性能无法说明结果是否可信。</p></div></div>
+          <div class="quality-list"><div class="quality-row"><span class="quality-num">01</span><h3>数据质量</h3><p>DataQualityDashboard 依据 Kahn 框架从完整性、一致性与合理性检查 OMOP CDM；官方 v5.5 页面称其包含超过 3,500 项检查，并要求网络研究参与库预先运行。</p></div><div class="quality-row"><span class="quality-num">02</span><h3>队列表型</h3><p>CohortDiagnostics 检查纳排损耗、源代码、队列重叠、发生率和患者概况。</p></div><div class="quality-row"><span class="quality-num">03</span><h3>研究设计</h3><p>查看目标与对照人群的重叠、协变量平衡、事件数和敏感性分析。</p></div><div class="quality-row"><span class="quality-num">04</span><h3>经验校准</h3><p>利用负对照刻画残余系统误差，并校准统计显著性和置信区间。</p></div><div class="quality-row"><span class="quality-num">05</span><h3>跨库一致性</h3><p>比较不同数据库的结果和诊断，判断异质性来自人群、数据还是设计。</p></div></div>
+          <div class="audit-note"><strong>不要把“通过 DQD”当作研究有效性证明：</strong>DQD 主要验证 CDM 层面的数据约束与经验阈值；队列表型的临床有效性、未测量混杂、时间零点、可迁移性与软件运行仍需分别诊断。</div>
+        </div>
+      </section>
+
+      <section class="section alt" id="network" data-nav="network">
+        <div class="container">
+          <div class="section-head"><div class="section-index">17</div><div><h2>多数据库研究：统一规范，本地执行</h2><p class="section-intro">标准化研究包在每个数据节点本地运行。数据伙伴对每项研究自愿加入，并按本地治理审批；通常患者级数据留在机构防火墙后，仅共享获批的聚合结果和诊断。</p></div></div>
+          <div class="network" aria-label="分布式研究流程"><div class="sources"><span class="source">电子病历</span><span class="source">医保理赔</span><span class="source">区域数据库</span><span class="source">疾病登记</span></div><div class="network-stage">统一研究包<small>队列、参数和分析代码</small></div><div class="network-stage local">本地执行<small>Strategus 协调 HADES 分析</small></div><div class="network-stage final">证据综合<small>EvidenceSynthesis 汇总效应和诊断</small></div></div>
+          <div class="principle-strip" style="margin-top:44px"><div class="principle"><strong>为什么做多库</strong><p>扩大人群和事件覆盖，研究罕见结局，并检验结果能否跨地区、机构和数据类型复现。</p></div><div class="principle"><strong>统一的是什么</strong><p>协议、概念集、队列 JSON、分析参数、软件版本、输出结构和诊断标准。</p></div><div class="principle"><strong>保留在本地的是什么</strong><p>患者级 CDM 数据、数据库连接信息及受本地治理限制的明细结果。</p></div></div>
+
+          <div class="network-roles">
+            <article class="network-role"><h3><span>A</span>研究协调中心 / Study Lead</h3><ul><li>明确研究问题、estimand、目标/对照/结局和分析计划。</li><li>维护协议、代码仓库、研究包版本、变更记录和截止时间。</li><li>组织可行性测试，回答各节点的临床与技术问题。</li><li>接收获批结果，执行跨库诊断、证据综合和报告。</li></ul></article>
+            <article class="network-role"><h3><span>B</span>本地数据节点 / Data Partner</h3><ul><li>自主决定是否参加该项研究，并完成伦理、法务和数据治理审批。</li><li>确认本地 CDM、词汇、结果 Schema、R/Java 与数据库权限满足要求。</li><li>在机构环境内执行冻结版本研究包，检查运行日志与结果质量。</li><li>进行披露风险审查，只释放本地明确批准的汇总结果。</li></ul></article>
+          </div>
+
+          <div class="network-phase">
+            <h3>从发起到发布：七个阶段与质量门</h3>
+            <div class="matrix-wrap"><table><thead><tr><th>阶段</th><th>协调中心</th><th>数据节点</th><th>阶段输出 / 质量门</th></tr></thead><tbody>
+              <tr><td>1. 方案与治理设计</td><td>锁定研究问题、主要分析、敏感性分析、结果共享范围与发表计划。</td><td>预审数据用途、最小单元格规则、结果传输方式和审批要求。</td><td>版本化协议；不能仅凭“数据已去标识化”跳过治理审查。</td></tr>
+              <tr><td>2. 可行性评估</td><td>发布概念集和初版队列，提出最小数据要求。</td><td>检查药物暴露、结局、观察期、样本量、事件数及 DQD/CohortDiagnostics。</td><td>形成站点可参与性判断；样本量大不等于结局或关键变量可用。</td></tr>
+              <tr><td>3. 研究包冻结</td><td>固定队列 JSON、analysis specification、参数、依赖和输出 Schema。</td><td>在非生产或测试配置中验证安装、SQL 方言和写入权限。</td><td>生成带版本号或提交哈希的可执行包；禁止各站点自行悄悄改参数。</td></tr>
+              <tr><td>4. 本地审批与配置</td><td>提供运行说明、支持渠道和结果提交规范。</td><td>取得本地批准，配置 CDM/Results Schema、DatabaseConnector 和凭据。</td><td>连接信息只保存在本地；审批完成后才进入正式运行。</td></tr>
+              <tr><td>5. 本地执行</td><td>协调一致的运行窗口，记录已知问题和修复版本。</td><td>用 Strategus 或研究包在本地执行 HADES 模块，保存日志和中间诊断。</td><td>同一包、同一参数、可追溯运行；失败节点先排错，不用手工补造结果。</td></tr>
+              <tr><td>6. 本地审查与释放</td><td>提供完整性校验清单，但不越过站点治理。</td><td>核对队列数量、事件、attrition、PS 平衡、负对照、异常日志及小单元格。</td><td>由数据节点批准可共享结果；未通过披露审查的文件不外发。</td></tr>
+              <tr><td>7. 综合、解释与发布</td><td>比较站点诊断，必要时使用 EvidenceSynthesis 做固定/随机效应或似然综合。</td><td>复核本节点结果在图表、论文和应用中的呈现。</td><td>同时报告单库结果、异质性与诊断；不能只发布一个合并效应值。</td></tr>
+            </tbody></table></div>
+          </div>
+
+          <div class="network-phase">
+            <h3>统一研究包应包含什么</h3>
+            <div class="concept-grid">
+              <article class="concept-card"><span class="tag">DESIGN</span><h3>研究设计资产</h3><p>协议、estimand、概念集、Target/Comparator/Outcome 队列 JSON、TAR、删失规则和敏感性分析计划。</p></article>
+              <article class="concept-card"><span class="tag">SPEC</span><h3>分析规范</h3><p>Strategus analysis specification 或等价配置，明确调用哪些 HADES 模块、参数组合和输出。</p></article>
+              <article class="concept-card"><span class="tag">CODE</span><h3>可执行代码与版本</h3><p>数据库无关的参数化代码、软件依赖、包版本或锁文件、安装说明、测试和变更记录。</p></article>
+              <article class="concept-card"><span class="tag">OUTPUT</span><h3>结果契约</h3><p>结果文件结构、必需诊断、最小单元格阈值、压缩/加密方式、传输渠道及禁止输出的字段。</p></article>
+            </div>
+          </div>
+
+          <div class="network-phase">
+            <h3>共享边界：分布式不等于自动安全</h3>
+            <div class="matrix-wrap"><table><thead><tr><th>内容</th><th>通常如何处理</th><th>提交前检查</th></tr></thead><tbody>
+              <tr><td>患者级 CDM 记录</td><td><span class="status limit">不离开节点</span></td><td>研究包不得导出 person_id、逐人时间线或可重识别明细。</td></tr>
+              <tr><td>数据库连接与凭据</td><td><span class="status limit">仅本地保存</span></td><td>不得写入研究仓库、日志包或结果压缩文件。</td></tr>
+              <tr><td>汇总计数、发生率、效应估计</td><td><span class="status context">审批后共享</span></td><td>执行小单元格抑制、二次推断风险和当地数据使用规则。</td></tr>
+              <tr><td>PS、协变量平衡、负对照、attrition</td><td><span class="status context">审批后共享</span></td><td>这些是解释效应所必需的诊断，但仍需检查稀疏值和站点识别风险。</td></tr>
+              <tr><td>协议、代码、队列定义</td><td><span class="status ok">优先公开</span></td><td>确认不含路径、凭据、本地表名或机构受限信息。</td></tr>
+            </tbody></table></div>
+          </div>
+
+          <div class="network-phase">
+            <h3>跨库结果不一致时，按这个顺序解释</h3>
+            <div class="quality-list"><div class="quality-row"><span class="quality-num">01</span><h3>先查执行一致性</h3><p>研究包版本、参数、CDM/词汇版本和运行错误是否一致。</p></div><div class="quality-row"><span class="quality-num">02</span><h3>再查数据捕获</h3><p>处方、发药、院内给药、结局、死亡和观察期在不同数据源中的可见性是否不同。</p></div><div class="quality-row"><span class="quality-num">03</span><h3>再查人群与可比性</h3><p>年龄、适应证、治疗阶段、医疗利用、PS 重叠和调整后平衡是否不同。</p></div><div class="quality-row"><span class="quality-num">04</span><h3>最后评估临床异质性</h3><p>诊疗路径、剂量、依从性、地区环境或患者构成是否可能造成真实效应差异。</p></div></div>
+            <div class="network-gate"><strong>证据综合门槛：</strong>只有在研究问题、效应尺度和主要设计足够一致，且单库诊断均可接受时，合并估计才有清晰含义。EvidenceSynthesis 可以执行固定效应、随机效应及适合稀疏/零计数的似然近似，但软件不能替代“这些数据库是否应当合并”的临床与方法学判断。</div>
+          </div>
+
+          <p class="matrix-note"><strong>一句话理解：</strong>多数据库研究不是把多份患者数据汇总到一个数据库，而是把同一份可审计的研究意图送到多个数据节点，在本地生成可比较的证据，再在治理允许的范围内综合这些证据。</p>
+          <p><a class="inline-source" href="https://ohdsi.github.io/TheBookOfOhdsi/NetworkResearch.html" target="_blank" rel="noreferrer">官方方法说明：OHDSI Network Research ↗</a>　<a class="inline-source" href="https://ohdsi.github.io/Strategus/" target="_blank" rel="noreferrer">执行工具：Strategus ↗</a>　<a class="inline-source" href="https://ohdsi.github.io/EvidenceSynthesis/" target="_blank" rel="noreferrer">证据综合：EvidenceSynthesis ↗</a></p>
+        </div>
+      </section>
+
+      <section class="section" id="matrix" data-nav="matrix">
+        <div class="container">
+          <div class="section-head"><div class="section-index">08</div><div><h2>方法选择矩阵：从问题落到设计</h2><p class="section-intro">先明确希望描述、估计还是预测什么，再评估数据能否支持相应设计。工具只是执行载体，不能替代 estimand 与研究方案。</p></div></div>
+          <div class="matrix-wrap"><table><thead><tr><th>研究问题</th><th>首选方法</th><th>主要工具</th><th>关键假设或风险</th></tr></thead><tbody><tr><td>用药规模与路径</td><td>描述性队列与治疗路径</td><td>Characterization<br>CohortIncidence<br>TreatmentPatterns</td><td>暴露持续期、停药和换药规则保持一致</td></tr><tr><td>药物 A 与 B 的效果</td><td>新使用者主动对照队列</td><td>CohortMethod</td><td>指征混杂、时间零点、人群重叠与残余系统误差</td></tr><tr><td>短期不良事件风险</td><td>SCCS 或自我对照队列</td><td>SelfControlledCaseSeries<br>SelfControlledCohort</td><td>时间变化混杂、事件依赖暴露和时间记录误差</td></tr><tr><td>治疗后个体风险</td><td>患者级预测</td><td>PatientLevelPrediction</td><td>外部验证、校准、数据漂移和临床行动阈值</td></tr><tr><td>多数据库证据</td><td>统一协议的分布式研究</td><td>Strategus<br>EvidenceSynthesis</td><td>数据异质性、诊断一致性和结果可合并性</td></tr></tbody></table></div>
+          <p class="matrix-note">每一种方法都应配套数据质量检查、队列诊断、敏感性分析和可复现的研究包。</p>
+        </div>
+      </section>
+
+      <section class="section orange-tint" id="implementation" data-nav="implementation">
+        <div class="container">
+          <div class="section-head"><div class="section-index">14</div><div><h2>实施总路线：把方案变成可执行研究</h2><p class="section-intro">在进入完整案例前，先用七步总路线检查依赖关系：前一步的输出，是后一步的输入和质量门。</p></div></div>
+          <div class="implementation"><div class="implementation-step"><h3>明确问题</h3><p>写清人群、暴露、对照、结局、时间和估计目标。</p></div><div class="implementation-step"><h3>评估源数据</h3><p>确认药品记录、观察期、结局信息与关键日期能支撑问题。</p></div><div class="implementation-step"><h3>验证 CDM 与映射</h3><p>检查 ETL 质量、药物标准概念、词汇版本和未映射比例。</p></div><div class="implementation-step"><h3>定义队列</h3><p>建立概念集、进入事件、纳排规则、索引日和退出策略。</p></div><div class="implementation-step"><h3>先做表征</h3><p>查看 attrition、基线差异、治疗路径、事件数和发生率。</p></div><div class="implementation-step"><h3>执行方法</h3><p>选择 HADES 软件包，固定参数并生成版本化研究包。</p></div><div class="implementation-step"><h3>解释证据</h3><p>结合主结果、诊断、负对照、敏感性分析和跨库异质性。</p></div></div>
+        </div>
+      </section>
+
+      <section class="section alt" id="ecosystem" data-nav="ecosystem">
+        <div class="container">
+          <div class="section-head"><div class="section-index">05</div><div><h2>工具与平台分工：先知道在哪里做什么</h2><p class="section-intro">一套典型部署不要求安装所有项目。Athena 管词汇，ETL 工具处理转换，ATLAS/WebAPI 负责交互设计，HADES 负责可复现分析，Strategus 负责多模块与多节点执行。</p></div></div>
+          <figure class="official-figure" style="margin-top:0; margin-bottom:38px">
+            <a href="assets/ohdsi-official/atlas-interface.png" target="_blank" aria-label="打开 ATLAS 官方界面截图原图"><img src="assets/ohdsi-official/atlas-interface.png" alt="OHDSI ATLAS 官方界面截图，左侧显示 Data Sources、Search、Concept Sets、Cohort Definitions、Characterizations、Estimation 和 Prediction 等功能" width="1499" height="913" loading="lazy"></a>
+            <figcaption><span class="figure-label">OFFICIAL SCREENSHOT</span><strong>ATLAS 平台总览：左侧菜单对应研究设计工作流</strong>从 Vocabulary Search/Concept Sets 建立临床语义，经 Cohort Definitions 构建人群，再进入 Characterizations、Incidence Rates、Estimation 或 Prediction。ATLAS 是研究设计与分析入口，不是患者数据仓库；真实分析通常连接机构内部的 WebAPI 与 OMOP CDM。<a href="https://ohdsi.github.io/TheBookOfOhdsi/OhdsiAnalyticsTools.html" target="_blank" rel="noreferrer">来源：The Book of OHDSI，OHDSI Analytics Tools ↗</a></figcaption>
+          </figure>
+          <div class="ecosystem-grid">
+            <article class="ecosystem-card"><span class="layer">VOCABULARY</span><h3>Athena</h3><p>浏览并下载 OMOP Standardized Vocabularies；用于查概念、关系、层级和现有映射。部分源词汇可能附带原始许可条件，下载与使用前需核对许可。</p><p><a href="https://athena.ohdsi.org/" target="_blank" rel="noreferrer">Athena ↗</a></p></article>
+            <article class="ecosystem-card"><span class="layer">ETL</span><h3>WhiteRabbit · Rabbit-in-a-Hat · Usagi</h3><p>WhiteRabbit 扫描源数据；Rabbit-in-a-Hat 记录 ETL 设计；Usagi 辅助人工词汇映射。它们支持设计和审阅，但不会自动保证临床映射正确。</p><p><a href="https://github.com/OHDSI/WhiteRabbit" target="_blank" rel="noreferrer">WhiteRabbit ↗</a> · <a href="https://github.com/OHDSI/Usagi" target="_blank" rel="noreferrer">Usagi ↗</a></p></article>
+            <article class="ecosystem-card"><span class="layer">DESIGN</span><h3>ATLAS + WebAPI</h3><p>ATLAS 是浏览器端研究设计与分析界面，WebAPI 提供后端服务。实时分析通常部署在机构防火墙内并连接本地 CDM；官方 Demo 适合体验界面、搜索词汇和练习研究设计，不代表可访问真实患者数据。</p><p><a href="https://atlas-demo.ohdsi.org/#/home" target="_blank" rel="noreferrer">打开 ATLAS Demo ↗</a> · <a href="https://github.com/OHDSI/atlas-wiki/blob/master/Home.md" target="_blank" rel="noreferrer">ATLAS Docs ↗</a> · <a href="https://github.com/OHDSI/WebAPI" target="_blank" rel="noreferrer">WebAPI ↗</a></p></article>
+            <article class="ecosystem-card"><span class="layer">DATA QA</span><h3>Achilles · DQD · ARES</h3><p>Achilles 做广泛的数据表征，DataQualityDashboard 执行规则检查，ARES 展示两者的结果。三者互补：描述分布、检出问题、支持浏览，不替代源到目标的临床审计。DQD 当前包文档明确列出的测试版本止于 CDM v5.4。</p><p><a href="https://ohdsi.github.io/DataQualityDashboard/" target="_blank" rel="noreferrer">DQD ↗</a> · <a href="https://ohdsi.github.io/Ares/" target="_blank" rel="noreferrer">ARES ↗</a></p></article>
+            <article class="ecosystem-card"><span class="layer">ANALYTICS</span><h3>HADES</h3><p>一组面向大规模观测研究的开源 R 包，覆盖表征、人群级效果估计、患者级预测及支撑组件。官方文档列出 PostgreSQL、SQL Server、Oracle、Redshift、BigQuery 等平台，并明确 HADES 不支持 MySQL。</p><p><a href="https://ohdsi.github.io/Hades/" target="_blank" rel="noreferrer">HADES ↗</a> · <a href="https://ohdsi.github.io/Hades/packages.html" target="_blank" rel="noreferrer">Packages ↗</a></p></article>
+            <article class="ecosystem-card"><span class="layer">ORCHESTRATION</span><h3>Strategus · EvidenceSynthesis</h3><p>Strategus 用 analysis specification 协调和执行 HADES 模块，并整理可共享结果；EvidenceSynthesis 负责跨数据源合并因果效应估计和诊断。能否合并仍取决于设计、数据和异质性判断。</p><p><a href="https://ohdsi.github.io/Strategus/" target="_blank" rel="noreferrer">Strategus ↗</a> · <a href="https://ohdsi.github.io/EvidenceSynthesis/" target="_blank" rel="noreferrer">EvidenceSynthesis ↗</a></p></article>
+          </div>
+          <div class="matrix-wrap" style="margin-top:42px"><table><thead><tr><th>你的任务</th><th>最小起点</th><th>常见下一步</th><th>不应误解为</th></tr></thead><tbody><tr><td>把本地数据转成 OMOP</td><td>CDM v5.5 规范 + Athena + ETL 文档</td><td>WhiteRabbit / Rabbit-in-a-Hat / Usagi</td><td>自动获得可研究数据</td></tr><tr><td>检查一个 CDM 数据源</td><td>源到目标核对 + DQD</td><td>Achilles + ARES</td><td>已经证明表型有效</td></tr><tr><td>交互设计队列或研究</td><td>ATLAS + WebAPI</td><td>CohortDiagnostics / 导出研究包</td><td>ATLAS 是数据仓库</td></tr><tr><td>批量或可复现分析</td><td>HADES 对应方法包</td><td>版本锁定 + 诊断 + 结果应用</td><td>一个单体软件包</td></tr><tr><td>多中心网络研究</td><td>统一协议与分析规范</td><td>Strategus + EvidenceSynthesis</td><td>数据伙伴自动同意参与</td></tr></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="section" id="verification" data-nav="verification">
+        <div class="container">
+          <div class="section-head"><div class="section-index">19</div><div><h2>内容核实结论与使用边界</h2><p class="section-intro">下表区分“已由官方资料支持的陈述”“需要增加语境的陈述”和“不能由工具本身保证的结论”，方便将本页用于培训、方案讨论或技术选型。</p></div></div>
+          <div class="matrix-wrap"><table><thead><tr><th>核实项</th><th>结论</th><th>依据与补充</th></tr></thead><tbody>
+            <tr><td>OHDSI / OMOP 的关系</td><td><span class="status ok">已核实</span></td><td>OHDSI 是开放科学社区；OMOP CDM 是其维护的开放社区数据标准。二者不应互换使用。</td></tr>
+            <tr><td>最新 CDM 版本</td><td><span class="status ok">已核实</span></td><td>官方 v5.5 规范明确称其为最新版本；应同时记录 CDM 版本和 vocabulary version，并核对工具对 v5.5 新特性的支持。</td></tr>
+            <tr><td>“一次编写、跨库运行”</td><td><span class="status context">需语境</span></td><td>结构和语义标准化提高代码复用，但仍需处理数据库方言、数据可得性、ETL 差异、概念版本和本地运行配置。</td></tr>
+            <tr><td>药物标准概念</td><td><span class="status ok">已核实</span></td><td>药物领域主要使用 RxNorm / RxNorm Extension 标准概念；ATC 通常用于分类，不应直接当作事实表中的标准暴露记录。</td></tr>
+            <tr><td>分布式研究保护隐私</td><td><span class="status context">需语境</span></td><td>患者级数据通常留在本地，降低跨机构传输；聚合结果仍可能受披露风险和本地治理约束。</td></tr>
+            <tr><td>DQD / CohortDiagnostics 的作用</td><td><span class="status limit">不能越界</span></td><td>它们分别帮助发现 CDM 数据问题与队列表型问题；不能自动证明临床有效性、因果可识别性或无偏。</td></tr>
+            <tr><td>倾向评分与经验校准</td><td><span class="status limit">不能越界</span></td><td>大规模协变量调整和负对照能诊断、降低部分系统误差，但不保证消除未测量混杂或得到因果真值。</td></tr>
+            <tr><td>网络规模数字</td><td><span class="status context">带日期引用</span></td><td>本页仅引用 OHDSI 2024 年公开普查；网络规模、数据更新、可用性和审批状态会变化。</td></tr>
+          </tbody></table></div>
+          <div class="audit-note"><strong>用于正式研究时还需要：</strong>预注册或锁定研究方案、数据源描述、伦理/治理审批、概念集与队列 JSON、CDM 和词汇版本、软件与依赖版本、数据质量结果、队列诊断、统计分析计划、负对照与敏感性分析，以及可审计的运行日志。本页是方法导航，不是可直接替代研究方案的模板。</div>
+        </div>
+      </section>
+
+      <section class="section references" id="references">
+        <div class="container">
+          <div class="section-head"><div class="section-index">R</div><div><h2>核实来源与官方入口</h2><p class="section-intro">优先使用 OHDSI 官方站点、官方项目文档和官方 GitHub 仓库。动态事实均标明核实日期；链接可直接打开原始资料。</p></div></div>
+          <div class="reference-grid">
+            <a class="reference-link" href="https://www.ohdsi.org/who-we-are/mission-vision-values/" target="_blank" rel="noreferrer"><strong>OHDSI Mission, Vision &amp; Values</strong>社区使命、愿景与开放协作价值</a>
+            <a class="reference-link" href="https://www.ohdsi.org/wp-content/uploads/2024/10/OurJourney2024.pdf" target="_blank" rel="noreferrer"><strong>Our Journey 2024</strong>带日期的 OMOP 数据源、国家和患者记录规模盘点</a>
+            <a class="reference-link" href="https://ohdsi.github.io/BookOfOhdsi-2ndEdition/" target="_blank" rel="noreferrer"><strong>The Book of OHDSI · 2nd Edition</strong>2026-06-22 发布的第二版在线总入口</a>
+            <a class="reference-link" href="https://ohdsi.github.io/TheBookOfOhdsi/OhdsiCommunity.html" target="_blank" rel="noreferrer"><strong>The OHDSI Community</strong>OMOP 历史、OHDSI 社区及三类分析用例</a>
+            <a class="reference-link" href="https://ohdsi.github.io/CommonDataModel/cdm55.html" target="_blank" rel="noreferrer"><strong>OMOP CDM v5.5 Specification</strong>最新 CDM 表、字段、约定及工具支持矩阵</a>
+            <a class="reference-link" href="https://ohdsi.github.io/CommonDataModel/cdm55Changes.html" target="_blank" rel="noreferrer"><strong>Changes v5.4 → v5.5</strong>新增字段、药品包装和词汇元数据表</a>
+            <a class="reference-link" href="https://ohdsi.github.io/CommonDataModel/cdmRequestProcess.html" target="_blank" rel="noreferrer"><strong>How to Request Changes to the CDM</strong>社区变更治理流程；其中版本提示存在滞后，需与最新规范交叉核对</a>
+            <a class="reference-link" href="https://ohdsi.github.io/BookOfOhdsi-2ndEdition/representation/vocabularies.html" target="_blank" rel="noreferrer"><strong>Standardized Vocabularies · 2nd Edition</strong>标准概念、映射、生命周期和版本记录</a>
+            <a class="reference-link" href="https://athena.ohdsi.org/" target="_blank" rel="noreferrer"><strong>Athena</strong>标准词汇浏览与下载入口</a>
+            <a class="reference-link" href="https://ohdsi.github.io/TheBookOfOhdsi/ExtractTransformLoad.html" target="_blank" rel="noreferrer"><strong>Extract Transform Load</strong>ETL 设计、映射、实现与质量控制</a>
+            <a class="reference-link" href="https://ohdsi.github.io/TheBookOfOhdsi/OhdsiAnalyticsTools.html" target="_blank" rel="noreferrer"><strong>OHDSI Analytics Tools</strong>ATLAS、WebAPI 与分析工具定位</a>
+            <a class="reference-link" href="https://atlas-demo.ohdsi.org/#/home" target="_blank" rel="noreferrer"><strong>ATLAS Demo</strong>OHDSI 官方演示环境，用于界面体验与研究设计练习</a>
+            <a class="reference-link" href="https://ohdsi.github.io/TheBookOfOhdsi/Cohorts.html" target="_blank" rel="noreferrer"><strong>Cohorts</strong>概念集、队列规则与表型验证</a>
+            <a class="reference-link" href="https://ohdsi.github.io/TheBookOfOhdsi/PopulationLevelEstimation.html" target="_blank" rel="noreferrer"><strong>Population-Level Estimation</strong>比较队列、倾向评分、自我对照与效果估计</a>
+            <a class="reference-link" href="https://github.com/OHDSI/atlas-wiki/blob/master/Estimation.md" target="_blank" rel="noreferrer"><strong>ATLAS Estimation</strong>人群级效果估计的平台入口与功能定位</a>
+            <a class="reference-link" href="https://ohdsi.github.io/CohortMethod/" target="_blank" rel="noreferrer"><strong>CohortMethod</strong>PS 匹配、分层、截尾、加权及结局模型的当前软件包文档</a>
+            <a class="reference-link" href="https://ohdsi.github.io/TheBookOfOhdsi/PatientLevelPrediction.html" target="_blank" rel="noreferrer"><strong>Patient-Level Prediction</strong>目标人群、结局、风险窗与模型验证</a>
+            <a class="reference-link" href="https://ohdsi.github.io/Hades/" target="_blank" rel="noreferrer"><strong>HADES</strong>当前 OHDSI 大规模分析 R 软件包体系</a>
+            <a class="reference-link" href="https://ohdsi.github.io/Hades/packages.html" target="_blank" rel="noreferrer"><strong>HADES Packages</strong>方法包、证据质量包与支撑工具清单</a>
+            <a class="reference-link" href="https://ohdsi.github.io/Strategus/" target="_blank" rel="noreferrer"><strong>Strategus</strong>HADES 模块分析规范、执行与结果整理</a>
+            <a class="reference-link" href="https://ohdsi.github.io/DataQualityDashboard/" target="_blank" rel="noreferrer"><strong>DataQualityDashboard</strong>OMOP CDM 数据质量检查</a>
+            <a class="reference-link" href="https://ohdsi.github.io/Ares/" target="_blank" rel="noreferrer"><strong>ARES</strong>Achilles 与 DQD 结果浏览</a>
+            <a class="reference-link" href="https://ohdsi.github.io/CohortDiagnostics/" target="_blank" rel="noreferrer"><strong>CohortDiagnostics</strong>队列表型开发和评估</a>
+            <a class="reference-link" href="https://ohdsi.github.io/EmpiricalCalibration/" target="_blank" rel="noreferrer"><strong>EmpiricalCalibration</strong>负对照与经验校准</a>
+            <a class="reference-link" href="https://ohdsi.github.io/TheBookOfOhdsi/NetworkResearch.html" target="_blank" rel="noreferrer"><strong>OHDSI Network Research</strong>自愿参与、分布式执行与聚合结果共享</a>
+            <a class="reference-link" href="https://www.ohdsi.org/who-we-are/regional-chapters/" target="_blank" rel="noreferrer"><strong>Regional Chapters</strong>地区社区与参与入口</a>
+            <a class="reference-link" href="https://github.com/OHDSI" target="_blank" rel="noreferrer"><strong>OHDSI on GitHub</strong>开源代码、问题追踪与版本发布</a>
+          </div>
+          <p class="source-note">核实日期：2026-09-06。静态方法说明综合官方规范与 The Book of OHDSI；版本、兼容性、网络规模和软件支持属于动态信息，实际部署或发表前应重新检查对应官方页面。第二版页面仍在持续维护时，具体操作细节以各项目当前官方文档和发布说明为准。</p>
+        </div>
+      </section>
+      <footer><div class="container">OHDSI 与药物分析方法 · 官方资料核实于 2026-09-06 · 含本地化官方图例的响应式 HTML</div></footer>
+    </main>
+  </div>
+
+  <script>
+    const chapterGroups = [
+      {
+        label: "PART I · ORIENTATION",
+        title: "认识 OHDSI，并把问题问对",
+        description: "先建立全景，再区分描述、因果、安全性与预测问题。",
+        sections: ["overview", "questions"]
+      },
+      {
+        label: "PART II · DATA FOUNDATION",
+        title: "准备可研究的数据与平台",
+        description: "从共同数据模型、药物语义和 ETL 质量，走到工具与平台的职责分工。",
+        sections: ["foundation", "vocabulary", "etl", "ecosystem"]
+      },
+      {
+        label: "PART III · STUDY DESIGN",
+        title: "从队列设计到分析方法",
+        description: "先定义人群和时间，再评估可行性，最后选择描述、效果、安全性或预测方法。",
+        sections: ["cohorts", "characterization", "matrix", "utilization", "effect", "ps-methods", "safety", "prediction"]
+      },
+      {
+        label: "PART IV · EXECUTION",
+        title: "从平台操作到可信证据",
+        description: "用实施总路线和完整案例串联配置、运行、诊断、交付与多数据库复现。",
+        sections: ["implementation", "worked-study", "quality", "network"]
+      },
+      {
+        label: "PART V · REFERENCE",
+        title: "术语、边界与官方来源",
+        description: "按需查阅术语，并核对哪些结论可以说、哪些结论不能由工具保证。",
+        sections: ["concepts", "verification", "references"]
+      }
+    ];
+
+    const contentMain = document.getElementById("content");
+    const pageFooter = contentMain.querySelector("footer");
+    chapterGroups.forEach((group) => {
+      const divider = document.createElement("div");
+      divider.className = "part-divider";
+      divider.innerHTML = `<div class="container"><div class="part-kicker">${group.label}</div><div><h2>${group.title}</h2><p>${group.description}</p></div></div>`;
+      contentMain.insertBefore(divider, pageFooter);
+      group.sections.forEach((id) => {
+        const section = document.getElementById(id);
+        if (section) contentMain.insertBefore(section, pageFooter);
+      });
+    });
+
+    const recommendations = {
+      utilization: {
+        title: "描述性队列与治疗路径",
+        body: "建立新使用者或现患使用者队列，描述起始、持续、停药、换药、加药和再启动。结果以人数、发生率、持续时间和治疗序列为主。",
+        tools: ["Characterization", "CohortIncidence", "TreatmentPatterns", "ATLAS"]
+      },
+      effect: {
+        title: "新使用者主动对照队列",
+        body: "在共同适应证和相近治疗阶段中比较目标药与主动对照药，统一时间零点和风险窗，并用倾向评分、结局模型、负对照和经验校准控制偏倚。",
+        tools: ["CohortMethod", "FeatureExtraction", "Cyclops", "EmpiricalCalibration"]
+      },
+      safety: {
+        title: "自我对照病例系列或自我对照队列",
+        body: "当关注急性或短期不良事件，并且个体固定特征可能造成强混杂时，让患者自身在不同时间段进行比较，同时处理年龄、季节和时间趋势。",
+        tools: ["SelfControlledCaseSeries", "SelfControlledCohort", "CohortDiagnostics"]
+      },
+      prediction: {
+        title: "患者级预测模型",
+        body: "定义目标队列 T、结局 O、时间零点和风险预测窗口 TAR，开发并验证个体风险模型。结果必须报告区分度、校准度和外部验证。",
+        tools: ["PatientLevelPrediction", "FeatureExtraction", "DeepPatientLevelPrediction"]
+      }
+    };
+
+    const buttons = document.querySelectorAll(".question-button");
+    const title = document.getElementById("recommendation-title");
+    const body = document.getElementById("recommendation-body");
+    const tools = document.getElementById("recommendation-tools");
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        buttons.forEach((item) => { item.classList.remove("active"); item.setAttribute("aria-selected", "false"); });
+        button.classList.add("active");
+        button.setAttribute("aria-selected", "true");
+        const item = recommendations[button.dataset.key];
+        title.textContent = item.title;
+        body.textContent = item.body;
+        tools.replaceChildren(...item.tools.map((name) => { const span = document.createElement("span"); span.textContent = name; return span; }));
+      });
+    });
+
+    const glossaryGroups = [...document.querySelectorAll("#concepts .glossary-group")];
+    glossaryGroups.forEach((group) => {
+      group.addEventListener("toggle", () => {
+        if (!group.open) return;
+        glossaryGroups.forEach((other) => { if (other !== group) other.open = false; });
+      });
+    });
+
+    const navLinks = [...document.querySelectorAll(".nav a")];
+    const sections = [...document.querySelectorAll("[data-nav]")];
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      navLinks.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === `#${visible.target.dataset.nav}`));
+    }, { rootMargin: "-20% 0px -60% 0px", threshold: [0, .2, .5] });
+    sections.forEach((section) => observer.observe(section));
+  </script>
+</body>
+</html>

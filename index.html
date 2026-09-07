@@ -921,14 +921,56 @@
 
       <section class="section orange-tint" id="etl" data-nav="etl">
         <div class="container">
-          <div class="section-head"><div class="section-index">04</div><div><h2>ETL 与数据质量：先证明数据可用</h2><p class="section-intro">ETL 不只是搬运数据，而是把源系统语义转成可审计的 CDM 记录。设计、映射、实现和质量控制应形成闭环，并可随数据与词汇版本重复运行。</p></div></div>
+          <div class="section-head"><div class="section-index">04</div><div><h2>ETL 与数据质量：从全病例到可分析 CDM</h2><p class="section-intro">当分析对象是医院全病例数据，而源库尚未采用 OMOP CDM 时，需要一个中间解析与标准化过程。ETL 不只是搬运字段，而是把业务记录解释成可追溯的患者、就诊和临床事件。</p></div></div>
+          <div class="chapter-bridge"><span class="bridge-label">承接 CDM 与词汇</span><p>第 02–03 章说明了目标结构和标准语义；本章回答“谁负责把全病例转换过去”。OHDSI 没有一个按钮可以自动完成全部转换：官方工具支持源数据扫描、设计和代码映射，真正执行加载的程序通常由数据机构根据本地系统开发和维护。</p></div>
+
+          <h3 style="margin-bottom:18px">推荐的数据分层：不要让分析直接读取业务库</h3>
+          <div class="reading-path" aria-label="全病例数据转换为OMOP CDM的五层结构">
+            <div class="reading-step"><b>1. Raw 原始层</b><span>保留 HIS、EMR、LIS、病案、处方、收费等源表原貌和原始主键。</span></div>
+            <div class="reading-step"><b>2. Staging 解析层</b><span>统一患者与就诊，识别事件，处理重复、时间语义、数值和单位。</span></div>
+            <div class="reading-step"><b>3. Mapping 映射层</b><span>把院内药品、诊断、手术和检验代码映射到标准概念。</span></div>
+            <div class="reading-step"><b>4. OMOP CDM层</b><span>加载 PERSON、VISIT、DRUG_EXPOSURE、CONDITION、MEASUREMENT 等表。</span></div>
+            <div class="reading-step"><b>5. QA与发布层</b><span>执行源到目标核对、DQD、Achilles和版本验收后，才提供给研究平台。</span></div>
+          </div>
+
+          <div class="method-contract">
+            <article class="contract-item"><b>为什么需要 Staging</b><p>全病例通常按业务流程组织，同一事实可能分散在医嘱、执行、发药、收费和病历中。</p></article>
+            <article class="contract-item"><b>中间层负责什么</b><p>患者归一、就诊关联、事件去重、日期选择、数值单位标准化和映射状态管理。</p></article>
+            <article class="contract-item"><b>中间层不应做什么</b><p>不覆盖原始值，不为了提高映射率强行赋予错误概念，不提前写入研究队列规则。</p></article>
+            <article class="contract-item"><b>什么时候可以省略</b><p>源数据已经是经过验证的 OMOP CDM，且结构、词汇、观察期和质量均满足当前研究。</p></article>
+          </div>
+
+          <h3 style="margin:42px 0 18px">ETL 四个工作阶段</h3>
           <div class="etl-grid">
             <article class="etl-step"><h3>设计</h3><p>White Rabbit 扫描表、字段和值分布；Rabbit-in-a-Hat 记录表到表、字段到字段和转换逻辑。</p></article>
             <article class="etl-step"><h3>代码映射</h3><p>由具备医学知识的人员使用 Usagi 等工具，将源代码审阅并映射到标准概念。</p></article>
-            <article class="etl-step"><h3>实现</h3><p>用可自动化的 SQL 或程序完成抽取、转换和加载，同时处理日期、单位、重复记录和主键。</p></article>
-            <article class="etl-step"><h3>质量控制</h3><p>检查完整性、一致性、合理性与源到目标的数量变化，并记录可重现的测试与版本。</p></article>
+            <article class="etl-step"><h3>实现</h3><p>由机构用 SQL、Python、Spark 或数据集成平台完成抽取、转换和加载；这是实际写入 CDM 的执行模块。</p></article>
+            <article class="etl-step"><h3>质量控制</h3><p>执行源到目标数量核对、完整性、一致性和合理性检查，并记录可重现的测试与版本。</p></article>
           </div>
+
+          <h3 style="margin:42px 0 18px">整个体系中，各模块具体负责什么</h3>
+          <div class="matrix-wrap"><table><thead><tr><th>模块或工具</th><th>在全病例转换中的职责</th><th>产生的主要输出</th><th>不能替代什么</th></tr></thead><tbody>
+            <tr><td>WhiteRabbit</td><td>扫描源数据库的表、字段、类型、取值频率和缺失情况。</td><td>源数据概况与扫描报告</td><td>不决定临床语义，也不自动生成合格 CDM。</td></tr>
+            <tr><td>Rabbit-in-a-Hat</td><td>设计源表到 CDM 表、源字段到目标字段的转换关系。</td><td>可审查的 ETL 设计图和转换说明</td><td>不负责运行生产级转换任务。</td></tr>
+            <tr><td>Athena + Usagi</td><td>查找标准词汇，辅助把院内码和本地术语映射到标准概念。</td><td>源代码—标准概念映射表及人工审阅结果</td><td>不保证自动推荐在临床上正确。</td></tr>
+            <tr><td>机构自建 ETL</td><td>连接源系统，执行清洗、解析、映射和装载，增量刷新 CDM。</td><td>PERSON、VISIT、DRUG_EXPOSURE 等 CDM 数据</td><td>不能仅靠程序测试证明临床含义正确。</td></tr>
+            <tr><td>DataQualityDashboard</td><td>检查 CDM 的完整性、一致性和合理性规则。</td><td>检查结果、失败项和阈值报告</td><td>不替代源到目标审计和队列表型验证。</td></tr>
+            <tr><td>Achilles + ARES</td><td>生成并浏览人群、药物、疾病、就诊和时间分布。</td><td>数据表征统计与可视化</td><td>不修复数据，也不自动说明异常原因。</td></tr>
+            <tr><td>ATLAS / HADES</td><td>在已验收的 CDM 上定义队列并执行研究分析。</td><td>队列定义、分析规范、诊断和结果</td><td>不负责把医院业务数据转换成 CDM。</td></tr>
+          </tbody></table></div>
+
+          <div class="audit-note"><strong>药物记录尤其需要语义解析：</strong>原始记录可能是医嘱、处方、药房发药、院内给药、收费或患者自报。它们都可能与 DRUG_EXPOSURE 有关，但开始日期、结束日期和可信度不同。应保留 drug_source_value、source_concept_id 和 drug_type_concept_id，不能简单把“有收费”解释为“患者已经服药”。</div>
+
+          <h3 style="margin:42px 0 18px">结构化数据与病历文本应分开处理</h3>
+          <div class="matrix-wrap"><table><thead><tr><th>源数据类型</th><th>主要处理方式</th><th>常见 CDM 去向</th><th>质量重点</th></tr></thead><tbody>
+            <tr><td>患者、就诊、诊断、医嘱、处方、检验、手术</td><td>结构化 ETL 与标准词汇映射</td><td>PERSON、VISIT、CONDITION、DRUG、MEASUREMENT、PROCEDURE</td><td>主键关联、日期语义、重复事件、单位和标准概念</td></tr>
+            <tr><td>入院记录、病程、手术记录、出院小结</td><td>先保留原文；需要时单独运行 NLP</td><td>NOTE；抽取结果可进入 NOTE_NLP</td><td>文本时间、否定词、主体、上下文及抽取模型验证</td></tr>
+            <tr><td>暂时无法标准映射的本地代码</td><td>保留源值并进入映射待办，不强行匹配</td><td>对应事实表的 source_value / source_concept_id</td><td>未映射比例、使用频率和对研究变量的影响</td></tr>
+            <tr><td>纯系统日志、界面状态和无临床含义字段</td><td>保留在原始或中间层，通常不加载 CDM</td><td>无，或进入本地扩展层</td><td>避免把技术事件误当作临床事件</td></tr>
+          </tbody></table></div>
+
           <div class="principle-strip" style="margin-top:42px"><div class="principle"><strong>可追溯</strong><p>保留源值、源概念和转换文档，能够解释每一条记录的来路。</p></div><div class="principle"><strong>可重复</strong><p>数据刷新时重新执行同一流程，而非手工修补结果。</p></div><div class="principle"><strong>可维护</strong><p>源系统、CDM 或词汇版本变化时，更新代码、文档和质量测试。</p></div></div>
+          <p class="matrix-note"><strong>验收门：</strong>只有在源到目标数量能够解释、关键事件语义明确、标准概念覆盖可接受、DQD 问题完成处置并记录 CDM/词汇/ETL 版本后，数据才应开放给 ATLAS 和 HADES。通过 DQD 仍不等于已经证明某个研究队列有效。</p>
           <div class="next-step"><strong>数据准备之后先认识工具。</strong> 当 CDM 结构、词汇映射和质量检查可用后，下一步是理解 Athena、ATLAS/WebAPI、HADES 与 Strategus 各自承担什么任务。进入 <a href="#ecosystem">第 05 章：工具与平台分工</a>。</div>
         </div>
       </section>

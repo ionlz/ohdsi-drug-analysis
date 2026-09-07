@@ -999,6 +999,17 @@
             <div class="timeline" aria-label="药物队列时间逻辑"><div class="time-block">基线与洗脱<small>用 t0 前信息判断资格和协变量</small></div><div class="time-block index">索引日 t0<small>首次满足全部进入条件</small></div><div class="time-block risk">队列持续期<small>成员时间；TAR 可与其相同或不同</small></div></div>
           </div>
 
+          <h3 style="margin:42px 0 18px">概念集与队列是多对多关系</h3>
+          <div class="principle-strip"><div class="principle"><strong>一个队列使用多个概念集</strong><p>分别承担进入事件、适应证、排除疾病、既往用药和结局等不同条件。</p></div><div class="principle"><strong>一个概念集服务多个队列</strong><p>同一个“2型糖尿病”概念集可以用于不同药物队列、结局研究和风险预测。</p></div><div class="principle"><strong>概念集本身没有患者</strong><p>只有队列定义在具体 CDM 上运行后，才生成患者及其开始、结束日期。</p></div></div>
+          <div class="matrix-wrap" style="margin-top:28px"><table><thead><tr><th>“二甲双胍新使用者队列”所用概念集</th><th>在队列中的用途</th><th>示例时间规则</th></tr></thead><tbody>
+            <tr><td>二甲双胍概念集</td><td>定义进入事件</td><td>首次出现匹配的 DRUG_EXPOSURE 作为 t0。</td></tr>
+            <tr><td>2型糖尿病概念集</td><td>定义适应证或纳入条件</td><td>t0 前 365 天内至少存在一次诊断。</td></tr>
+            <tr><td>1型糖尿病概念集</td><td>定义排除条件</td><td>t0 前任意时间出现相关诊断则排除。</td></tr>
+            <tr><td>其他降糖药概念集</td><td>判断是否为新使用者或一线单药</td><td>t0 前 365 天无相关药物暴露。</td></tr>
+            <tr><td>妊娠相关概念集</td><td>排除特殊临床状态</td><td>在预设基线窗口内出现妊娠记录则排除。</td></tr>
+          </tbody></table></div>
+          <div class="audit-note"><strong>反向复用示例：</strong>同一个“2型糖尿病”概念集可以同时用于二甲双胍新使用者、SGLT2 抑制剂新使用者、糖尿病肾病研究和低血糖风险预测队列。每个队列再叠加自己的药物、结局、纳排条件与时间规则。</div>
+
           <h3 style="margin:42px 0 18px">同一个“队列组件”在研究中的不同角色</h3>
           <div class="matrix-wrap"><table><thead><tr><th>角色</th><th>回答的问题</th><th>药物研究示例</th><th>复用注意点</th></tr></thead><tbody>
             <tr><td>Target</td><td>接受目标治疗的是谁？</td><td>ACEI 新使用者</td><td>新使用者、适应证、治疗阶段和退出策略必须符合当前问题。</td></tr>
@@ -1064,7 +1075,7 @@
               <article class="term"><h4>Clinical Drug <small>临床药品</small></h4><p>通常组合成分、剂量强度和剂型，例如“某成分 10 mg 口服片”。适合需要精确规格或剂型的研究。</p><div class="pitfall">定义过细会降低跨数据库可用性，也可能造成样本分散。</div></article>
               <article class="term"><h4>Branded Drug <small>品牌药</small></h4><p>在临床药品语义上再包含品牌信息。品牌比较需要确认各国家和数据库是否完整记录商品名。</p><div class="pitfall">品牌缺失或被映射到非品牌概念时，品牌层面的比较会产生选择性缺失。</div></article>
               <article class="term"><h4>Standard / Source Concept <small>标准与源概念</small></h4><p>标准概念用于分析字段；源概念保留本地代码。通过 Maps to 建立二者关系，既实现互操作，也保留追溯能力。</p><div class="pitfall">CONCEPT_ID = 0 通常表示未映射或没有对应概念，不能悄悄忽略。</div></article>
-              <article class="term"><h4>Concept Set <small>概念集</small></h4><p>不是静态代码清单，而是可执行表达式：选定概念后，可包含后代、排除指定分支，并解析映射到的源代码。</p><div class="pitfall">必须保存表达式、解析后的概念列表和词汇版本，才能真正复现。</div></article>
+              <article class="term"><h4>Concept Set <small>概念集</small></h4><p>可执行的临床概念表达式：选定概念后，可包含后代、排除指定分支，并解析映射概念。一个队列通常调用多个概念集，同一概念集也可被多个队列复用。</p><div class="pitfall">概念集定义代码范围，不直接包含患者；必须保存表达式、解析后的概念列表和词汇版本。</div></article>
               <article class="term"><h4>ATC 与 RxNorm <small>分类与临床药物表示</small></h4><p>RxNorm / RxNorm Extension 主要承担药物标准概念；ATC 更适合药理或治疗分类查询。二者用途不同，不应把 ATC 分类概念直接当作暴露记录。</p><div class="pitfall">药物类别研究通常用分类概念找到成员，再解析为可记录的标准药物概念。</div></article>
             </div>
           </details>
@@ -1072,7 +1083,7 @@
           <details class="glossary-group">
             <summary class="glossary-title"><span>C</span><h3>队列、人群与时间</h3></summary>
             <div class="term-grid">
-              <article class="term"><h4>Cohort Definition <small>队列定义</small></h4><p>描述进入事件、纳排条件、初始事件选择和退出策略的一套可执行规则。它是可以共享和版本化的研究对象，不是患者名单。</p><div class="pitfall">常见误区：把队列名称或一组诊断代码当作完整队列定义。</div></article>
+              <article class="term"><h4>Cohort Definition <small>队列定义</small></h4><p>把一个或多个概念集与进入事件、纳排条件、初始事件选择和退出策略组合成可执行规则。它是可以共享和版本化的研究对象。</p><div class="pitfall">队列与概念集不是一对一关系；队列实例化之前也没有具体患者名单。</div></article>
               <article class="term"><h4>Cohort Entry <small>队列进入</small></h4><p>某位患者某次满足完整定义时形成的入口，开始日期通常作为索引日 t0。定义可限定首次入口，也可以允许重复进入。</p></article>
               <article class="term"><h4>Cohort Interval <small>队列区间</small></h4><p>由 cohort_start_date 和 cohort_end_date 表示的成员时间。队列的分析单位首先是患者—时间区间，而不只是患者。</p><div class="pitfall">区间表示符合队列定义的时间，不表示区间内每天都有医疗记录。</div></article>
               <article class="term"><h4>Cohort Instantiation <small>队列实例化</small></h4><p>将队列定义在某个具体 OMOP CDM 数据库上执行并生成本地队列表的过程。同一定义在不同数据库会产生不同人数和区间。</p></article>
